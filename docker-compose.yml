@@ -1,0 +1,158 @@
+# WorkSphere -- local development stack.
+#
+# Bind-mounts backend/ and frontend/ source into the containers so code
+# edits are picked up without rebuilding images. For production, use
+# docker-stack.yml instead (pre-built, immutable images, no bind mounts).
+#
+# Usage:
+#   cp .env.example .env   # then edit values
+#   docker compose up --build
+#   docker compose exec backend php artisan migrate --seed
+
+services:
+  mysql:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-worksphere}
+      MYSQL_USER: ${MYSQL_USER:-worksphere}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootsecret}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "5394:3306"
+    networks:
+      - worksphere
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootsecret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "5395:6379"
+    networks:
+      - worksphere
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    restart: unless-stopped
+    # Bind-mount the Laravel source for dev iteration. vendor/ is kept as an
+    # anonymous volume so the host's (possibly absent/incompatible) vendor
+    # directory doesn't shadow the one installed inside the image.
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    env_file:
+      - ./backend/.env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      # Exposed directly for convenience during dev (curl/Postman straight
+      # to the API without going through the nginx proxy).
+      - "5396:8080"
+    networks:
+      - worksphere
+
+  queue-worker:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    restart: unless-stopped
+    command: ["php", "artisan", "queue:work", "--tries=3"]
+    # The backend image's HEALTHCHECK curls the internal nginx+php-fpm pair
+    # (started by supervisord) on :8080, but this service overrides CMD to
+    # run `artisan queue:work` directly instead -- nothing ever listens on
+    # :8080 here, so that check would always fail. Disable it; queue-worker
+    # health is really "is the process still running", which `restart:
+    # unless-stopped` already covers.
+    healthcheck:
+      disable: true
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - backend
+    networks:
+      - worksphere
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    restart: unless-stopped
+    # Laravel's recommended approach when there's no host cron available:
+    # invoke the scheduler once a minute in a loop.
+    command: ["sh", "-c", "while true; do php artisan schedule:run; sleep 60; done"]
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - backend
+    networks:
+      - worksphere
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      # Stop at the `deps` stage (node_modules installed, source not yet
+      # built) rather than building the full production image. The full
+      # multi-stage build produces a compiled `.next/standalone` bundle
+      # that a source bind-mount would just shadow/break -- there'd be no
+      # hot reload, just a broken `node server.js`. Running `next dev`
+      # against the bind-mounted source instead gives real hot reload.
+      target: deps
+    restart: unless-stopped
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5393/api/v1}
+    ports:
+      - "5397:3000"
+    networks:
+      - worksphere
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    ports:
+      - "5393:80"
+      # - "5443:443"   # see docker/nginx/default.conf.template for the commented HTTPS block
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - worksphere
+
+networks:
+  worksphere:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  backend_vendor:
+  frontend_node_modules:

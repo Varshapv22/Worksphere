@@ -1,0 +1,120 @@
+# Top-level reverse proxy for WorkSphere.
+#
+# This is an nginx:alpine `.template` file: the image's docker-entrypoint
+# runs `envsubst` over it at container start (nginx's built-in
+# NGINX_ENVSUBST support) and writes the result to
+# /etc/nginx/conf.d/default.conf. Only variables listed in
+# NGINX_ENVSUBST_TEMPLATE_VARS (or all $-prefixed vars if unset) get
+# substituted -- we don't currently rely on any runtime substitution here,
+# but the .template extension is kept so this is a drop-in place to add
+# some later (e.g. $SERVER_NAME) without changing the Dockerfile/compose
+# setup.
+#
+# Routing:
+#   /api/, /sanctum/  -> http://backend:8080   (Laravel, via the backend
+#                        container's own internal nginx+php-fpm -- see
+#                        docker/backend.Dockerfile. Plain HTTP, no FastCGI
+#                        plumbing crosses the container boundary.)
+#   everything else   -> http://frontend:3000  (Next.js)
+
+upstream backend_upstream {
+    server backend:8080;
+}
+
+upstream frontend_upstream {
+    server frontend:3000;
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    client_max_body_size 25m;
+
+    access_log /dev/stdout;
+    error_log  /dev/stderr;
+
+    location /api/ {
+        proxy_pass http://backend_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300;
+    }
+
+    location /sanctum/ {
+        proxy_pass http://backend_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Laravel health check, handy to probe from outside the mesh too.
+    location /up {
+        proxy_pass http://backend_upstream;
+        proxy_set_header Host $host;
+    }
+
+    location / {
+        proxy_pass http://frontend_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Next.js dev/HMR + any websocket usage
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+
+# ---------------------------------------------------------------------------
+# HTTPS server block -- scaffolded for later use, not wired live.
+# To enable: obtain certs (e.g. certbot/letsencrypt), mount them into the
+# nginx container at /etc/nginx/certs, uncomment this block, publish port
+# 443 in docker-compose.yml / docker-stack.yml, and optionally add a
+# redirect from the :80 server block above to https.
+# ---------------------------------------------------------------------------
+#
+# server {
+#     listen 443 ssl;
+#     server_name yourdomain.com;
+#
+#     ssl_certificate     /etc/nginx/certs/fullchain.pem;
+#     ssl_certificate_key /etc/nginx/certs/privkey.pem;
+#     ssl_protocols       TLSv1.2 TLSv1.3;
+#     ssl_ciphers         HIGH:!aNULL:!MD5;
+#
+#     client_max_body_size 25m;
+#
+#     location /api/ {
+#         proxy_pass http://backend_upstream;
+#         proxy_http_version 1.1;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+#
+#     location /sanctum/ {
+#         proxy_pass http://backend_upstream;
+#         proxy_http_version 1.1;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+#
+#     location / {
+#         proxy_pass http://frontend_upstream;
+#         proxy_http_version 1.1;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#         proxy_set_header Upgrade $http_upgrade;
+#         proxy_set_header Connection "upgrade";
+#     }
+# }

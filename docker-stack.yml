@@ -1,0 +1,271 @@
+# WorkSphere -- production Docker Swarm stack.
+#
+# Unlike docker-compose.yml, this uses pre-built, immutable images (no bind
+# mounts, no build: blocks -- Swarm doesn't build images itself). Build and
+# tag them first:
+#
+#   docker build -f docker/backend.Dockerfile  -t worksphere-backend:latest  .
+#   docker build -f docker/frontend.Dockerfile -t worksphere-frontend:latest \
+#       --build-arg NEXT_PUBLIC_API_URL=https://yourdomain.com/api/v1 .
+#
+# Then:
+#   cp .env.example .env   # edit values
+#   docker stack deploy -c docker-stack.yml --env-file .env worksphere
+#
+# See README.md for the full walkthrough (migrations, scaling, rolling
+# updates, secrets as a hardening option, etc).
+
+services:
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-worksphere}
+      MYSQL_USER: ${MYSQL_USER:-worksphere}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootsecret}
+    volumes:
+      # `local` volume driver ties this data to whatever node the container
+      # happens to land on. Fine for a single-manager/single-node Swarm
+      # (this setup). If mysql might ever be scheduled onto a different
+      # node than where the volume was first created (multi-host Swarm),
+      # switch this to a shared volume driver (local-persist, NFS, or a
+      # cloud block-storage plugin) or pin mysql with a placement
+      # constraint to a labeled node.
+      - mysql_data:/var/lib/mysql
+    ports:
+      # Published so external DB clients (TablePlus, DBeaver, etc.) can
+      # reach it directly. Exposing a database port on a multi-tenant SaaS
+      # host is a real attack-surface tradeoff -- restrict with a firewall
+      # (ufw/security group) to trusted IPs, or drop this block entirely
+      # and tunnel via `docker exec`/SSH port-forwarding instead.
+      - target: 3306
+        published: 5394
+        protocol: tcp
+        mode: host
+    networks:
+      - worksphere_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootsecret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - target: 6379
+        published: 5395
+        protocol: tcp
+        mode: host
+    networks:
+      - worksphere_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+
+  backend:
+    image: worksphere-backend:latest
+    env_file:
+      - .env
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE:-worksphere}
+      DB_USERNAME: ${MYSQL_USER:-worksphere}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-secret}
+      REDIS_HOST: redis
+    ports:
+      # Published for direct API access/debugging, bypassing nginx. Uses
+      # ingress mode (not host) since this service runs multiple replicas --
+      # the routing mesh load-balances across them on a single published port.
+      - target: 8080
+        published: 5396
+        protocol: tcp
+        mode: ingress
+    networks:
+      - worksphere_net
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+
+  queue-worker:
+    image: worksphere-backend:latest
+    command: ["php", "artisan", "queue:work", "--tries=3"]
+    env_file:
+      - .env
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE:-worksphere}
+      DB_USERNAME: ${MYSQL_USER:-worksphere}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-secret}
+      REDIS_HOST: redis
+    networks:
+      - worksphere_net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+
+  scheduler:
+    image: worksphere-backend:latest
+    command: ["sh", "-c", "while true; do php artisan schedule:run; sleep 60; done"]
+    env_file:
+      - .env
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE:-worksphere}
+      DB_USERNAME: ${MYSQL_USER:-worksphere}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-secret}
+      REDIS_HOST: redis
+    networks:
+      - worksphere_net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
+        reservations:
+          cpus: "0.05"
+          memory: 64M
+
+  frontend:
+    image: worksphere-frontend:latest
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5393/api/v1}
+    ports:
+      # Published for direct access/debugging, bypassing nginx. Ingress mode
+      # since this service runs multiple replicas.
+      - target: 3000
+        published: 5397
+        protocol: tcp
+        mode: ingress
+    networks:
+      - worksphere_net
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+
+  nginx:
+    image: nginx:alpine
+    configs:
+      - source: nginx_conf_template
+        target: /etc/nginx/templates/default.conf.template
+    ports:
+      # Only nginx is published to the host / Swarm ingress mesh -- every
+      # other service stays internal to worksphere_net.
+      - target: 80
+        published: 5393
+        protocol: tcp
+        mode: ingress
+      # - target: 443
+      #   published: 5443
+      #   protocol: tcp
+      #   mode: ingress
+    networks:
+      - worksphere_net
+    depends_on:
+      - backend
+      - frontend
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        order: start-first
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+
+networks:
+  worksphere_net:
+    driver: overlay
+
+volumes:
+  mysql_data:
+    driver: local
+
+configs:
+  nginx_conf_template:
+    file: ./docker/nginx/default.conf.template
