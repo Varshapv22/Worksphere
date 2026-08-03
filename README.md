@@ -516,3 +516,4 @@ whatever other module pages already exist in the scaffold).
 
 Copy this pattern for each remaining module, swapping in the module's fields, permission
 names, and route prefix.
+# Worksphere
