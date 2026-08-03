@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --surface: #f8f9fa;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Brand — light green, matches Tailwind's green scale almost exactly. */
+  --color-brand-50: var(--color-green-50);
+  --color-brand-100: var(--color-green-100);
+  --color-brand-200: var(--color-green-200);
+  --color-brand-300: var(--color-green-300);
+  --color-brand-400: var(--color-green-400);
+  --color-brand-500: var(--color-green-500);
+  --color-brand-600: var(--color-green-600);
+  --color-brand-700: var(--color-green-700);
+  --color-brand-800: var(--color-green-800);
+  --color-brand-900: var(--color-green-900);
+
+  /* Semantic status colors — aliased so components read as intent, not hue. */
+  --color-success-50: var(--color-green-50);
+  --color-success-100: var(--color-green-100);
+  --color-success-600: var(--color-green-600);
+  --color-success-700: var(--color-green-700);
+
+  --color-warning-50: var(--color-amber-50);
+  --color-warning-100: var(--color-amber-100);
+  --color-warning-600: var(--color-amber-600);
+  --color-warning-700: var(--color-amber-700);
+
+  --color-danger-50: var(--color-red-50);
+  --color-danger-100: var(--color-red-100);
+  --color-danger-600: var(--color-red-600);
+  --color-danger-700: var(--color-red-700);
+
+  --color-info-50: var(--color-blue-50);
+  --color-info-100: var(--color-blue-100);
+  --color-info-600: var(--color-blue-600);
+  --color-info-700: var(--color-blue-700);
+}
+
+/*
+ * Enterprise SaaS spec calls for a light-only interface — explicitly opt
+ * out of the OS dark-mode boilerplate `create-next-app` ships with.
+ */
+
+body {
+  background: var(--surface);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
