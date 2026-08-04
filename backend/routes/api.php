@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\CompanyController as AdminCompanyController;
+use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Api\Admin\PlatformStatsController;
 use App\Http\Controllers\Api\Admin\SubscriptionPlanController as AdminSubscriptionPlanController;
 use App\Http\Controllers\Api\AdvisorController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Api\DesignationController;
 use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\LeaveRequestController;
 use App\Http\Controllers\Api\LeaveTypeController;
+use App\Http\Controllers\Api\ModuleController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -33,9 +35,11 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('designations', DesignationController::class);
         Route::apiResource('employees', EmployeeController::class);
 
-        Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn']);
-        Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut']);
-        Route::get('/attendance', [AttendanceController::class, 'index']);
+        Route::middleware('module:attendance')->group(function () {
+            Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn']);
+            Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut']);
+            Route::get('/attendance', [AttendanceController::class, 'index']);
+        });
 
         Route::apiResource('leave-types', LeaveTypeController::class);
 
@@ -45,6 +49,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject']);
 
         Route::get('/advisor/insights', [AdvisorController::class, 'insights']);
+
+        // App marketplace - which modules this company has installed.
+        Route::get('/modules', [ModuleController::class, 'index']);
+        Route::patch('/modules/{module}/toggle', [ModuleController::class, 'toggle']);
     });
 
     // Super admin only - platform management, not scoped to any tenant.
@@ -60,5 +68,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('subscription-plans', AdminSubscriptionPlanController::class)
             ->parameters(['subscription-plans' => 'subscriptionPlan'])
             ->except(['show']);
+
+        Route::apiResource('modules', AdminModuleController::class)->except(['show']);
     });
 });

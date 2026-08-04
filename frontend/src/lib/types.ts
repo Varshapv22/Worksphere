@@ -171,6 +171,23 @@ export interface AdminCompany {
   created_at: string;
 }
 
+export interface Module {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  icon?: string | null;
+  category?: string | null;
+  sort_order?: number;
+  is_active: boolean;
+  is_available: boolean;
+  is_enabled?: boolean;
+  enabled_at?: string | null;
+  enabled_company_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface PlatformStats {
   companies: {
     total: number;

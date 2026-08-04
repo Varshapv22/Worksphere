@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
+  Blocks,
   Building2,
   CalendarDays,
   Clock,
@@ -17,6 +18,8 @@ import {
   Users,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { apiFetch } from "@/lib/api";
+import type { Module } from "@/lib/types";
 import { Drawer } from "@/components/Drawer";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { cn } from "@/lib/cn";
@@ -28,13 +31,21 @@ const tenantNavItems = [
   { href: "/departments", label: "Departments", icon: Network },
   { href: "/attendance", label: "Attendance", icon: Clock },
   { href: "/leave", label: "Leave", icon: CalendarDays },
+  { href: "/modules", label: "App Marketplace", icon: Blocks },
 ];
 
 const superAdminNavItems = [
   { href: "/admin", label: "Platform Dashboard", icon: Gauge },
   { href: "/admin/companies", label: "Companies", icon: Building2 },
   { href: "/admin/plans", label: "Plans", icon: CreditCard },
+  { href: "/admin/modules", label: "Modules", icon: Blocks },
 ];
+
+// Nav items whose route belongs to an installable module - hidden unless
+// that module is enabled for the current company.
+const moduleGatedRoutes: Record<string, string> = {
+  "/attendance": "attendance",
+};
 
 function NavLinks({
   navItems,
@@ -86,6 +97,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // null = not loaded yet (or fetch failed) - fail open so a transient
+  // error never hides nav items the company actually has access to.
+  const [enabledModuleSlugs, setEnabledModuleSlugs] = useState<Set<string> | null>(null);
 
   const isSuperAdmin = Boolean(user?.is_super_admin);
   const inAdminArea = pathname.startsWith("/admin");
@@ -94,6 +108,24 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     await logout();
     router.push("/login");
   }
+
+  useEffect(() => {
+    if (isSuperAdmin || !user) return;
+    let cancelled = false;
+    apiFetch<{ data: Module[] }>("/modules")
+      .then((res) => {
+        if (cancelled) return;
+        setEnabledModuleSlugs(new Set(res.data.filter((m) => m.is_enabled).map((m) => m.slug)));
+      })
+      .catch(() => {
+        // Leave it null - nav items stay visible rather than disappearing.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Re-check on every route change so toggling a module in the app
+    // marketplace is reflected in the nav as soon as the user navigates.
+  }, [isSuperAdmin, user, pathname]);
 
   // Platform super admins and tenant users see completely different
   // workspaces - bounce anyone who lands on the wrong side.
@@ -122,7 +154,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     );
   }
 
-  const navItems = isSuperAdmin ? superAdminNavItems : tenantNavItems;
+  const navItems = (isSuperAdmin ? superAdminNavItems : tenantNavItems).filter((item) => {
+    const requiredSlug = moduleGatedRoutes[item.href];
+    if (!requiredSlug || !enabledModuleSlugs) return true;
+    return enabledModuleSlugs.has(requiredSlug);
+  });
 
   return (
     <div className="flex min-h-screen bg-surface">

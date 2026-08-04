@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Employee;
 use App\Models\LeaveType;
+use App\Models\Module;
 use App\Models\Payroll;
 use App\Models\PerformanceReview;
 use App\Models\SubscriptionPlan;
@@ -91,6 +92,12 @@ class DatabaseSeeder extends Seeder
             'subscription_plan_id' => $plan->id,
             'status' => 'approved',
         ]);
+
+        // Attendance ships built and enabled by default; every other
+        // marketplace module starts uninstalled until a company opts in.
+        if ($attendanceModule = Module::where('slug', 'attendance')->first()) {
+            $company->modules()->attach($attendanceModule->id, ['is_enabled' => true, 'enabled_at' => now()]);
+        }
 
         setPermissionsTeamId($company->id);
 

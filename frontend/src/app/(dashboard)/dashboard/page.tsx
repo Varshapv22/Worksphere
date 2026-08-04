@@ -13,24 +13,33 @@ function todayStr() {
 
 export default function DashboardPage() {
   const [headcount, setHeadcount] = useState<number | null>(null);
-  const [presentToday, setPresentToday] = useState<number | null>(null);
+  const [presentToday, setPresentToday] = useState<number | string | null>(null);
   const [pendingLeave, setPendingLeave] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
-        const today = todayStr();
-        const [employees, leaveRequests, attendance] = await Promise.all([
+        const [employees, leaveRequests] = await Promise.all([
           apiFetch<Paginated<Employee>>("/employees"),
           apiFetch<Paginated<LeaveRequest>>("/leave-requests?status=pending"),
-          apiFetch<Paginated<AttendanceRecord>>(`/attendance?from=${today}&to=${today}`),
         ]);
         setHeadcount(employees.meta.total);
         setPendingLeave(leaveRequests.meta.total);
-        setPresentToday(attendance.data.filter((r) => r.clock_in).length);
       } catch (err) {
         setError(err instanceof ApiError ? err.message : "Failed to load dashboard data.");
+      }
+
+      // Fetched separately: the Attendance module may be disabled for this
+      // company, in which case this 403s and the stat is simply left blank
+      // rather than breaking the rest of the dashboard.
+      try {
+        const today = todayStr();
+        const attendance = await apiFetch<Paginated<AttendanceRecord>>(`/attendance?from=${today}&to=${today}`);
+        setPresentToday(attendance.data.filter((r) => r.clock_in).length);
+      } catch {
+        // Not "still loading" (null) - the module just isn't enabled.
+        setPresentToday("—");
       }
     }
     load();

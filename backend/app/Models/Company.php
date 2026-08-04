@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Model
@@ -77,5 +78,17 @@ class Company extends Model
     public function leaveRequests(): HasMany
     {
         return $this->hasMany(LeaveRequest::class);
+    }
+
+    public function modules(): BelongsToMany
+    {
+        return $this->belongsToMany(Module::class, 'company_module')
+            ->withPivot('is_enabled', 'enabled_at')
+            ->withTimestamps();
+    }
+
+    public function hasModuleEnabled(string $slug): bool
+    {
+        return $this->modules()->where('slug', $slug)->wherePivot('is_enabled', true)->exists();
     }
 }

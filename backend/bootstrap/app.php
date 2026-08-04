@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\IdentifyTenant;
 use Illuminate\Foundation\Application;
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant' => IdentifyTenant::class,
             'super-admin' => EnsureSuperAdmin::class,
+            'module' => EnsureModuleEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
