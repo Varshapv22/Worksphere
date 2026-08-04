@@ -30,18 +30,17 @@ interface LoginResponse {
 }
 
 interface RegisterCompanyResponse {
-  user: User;
+  message: string;
   company: Company;
-  token: string;
 }
 
 interface AuthContextValue {
   user: User | null;
   company: Company | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
-  registerCompany: (payload: RegisterCompanyPayload) => Promise<void>;
+  registerCompany: (payload: RegisterCompanyPayload) => Promise<RegisterCompanyResponse>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -90,21 +89,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.token);
     setUser(res.user);
     setCompany(res.user.company ?? null);
+    return res.user;
   }, []);
 
+  // New companies start pending admin approval - no token is issued, so
+  // there's nothing to log in with yet. The caller shows a "wait for
+  // approval" screen with the returned message.
   const registerCompany = useCallback(
     async (payload: RegisterCompanyPayload) => {
-      const res = await apiFetch<RegisterCompanyResponse>(
-        "/auth/register-company",
-        {
-          method: "POST",
-          body: JSON.stringify(payload),
-          auth: false,
-        }
-      );
-      setToken(res.token);
-      setUser(res.user);
-      setCompany(res.company);
+      return apiFetch<RegisterCompanyResponse>("/auth/register-company", {
+        method: "POST",
+        body: JSON.stringify(payload),
+        auth: false,
+      });
     },
     []
   );

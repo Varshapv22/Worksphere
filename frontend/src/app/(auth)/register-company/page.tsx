@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, TriangleAlert } from "lucide-react";
+import { Eye, EyeOff, HourglassIcon, TriangleAlert } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/Button";
@@ -12,7 +11,6 @@ import { AuthShowcase } from "@/components/AuthShowcase";
 
 export default function RegisterCompanyPage() {
   const { registerCompany } = useAuth();
-  const router = useRouter();
 
   const [companyName, setCompanyName] = useState("");
   const [companySlug, setCompanySlug] = useState("");
@@ -23,13 +21,14 @@ export default function RegisterCompanyPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
+  const [submittedMessage, setSubmittedMessage] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setErrors({});
     setLoading(true);
     try {
-      await registerCompany({
+      const res = await registerCompany({
         company_name: companyName,
         company_slug: companySlug,
         company_email: companyEmail,
@@ -37,7 +36,7 @@ export default function RegisterCompanyPage() {
         admin_email: adminEmail,
         admin_password: adminPassword,
       });
-      router.push("/dashboard");
+      setSubmittedMessage(res.message);
     } catch (err) {
       if (err instanceof ApiError) {
         setErrors(err.errors ?? { general: [err.message] });
@@ -47,6 +46,37 @@ export default function RegisterCompanyPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (submittedMessage) {
+    return (
+      <div className="flex min-h-screen">
+        <div className="flex w-full flex-col justify-center px-6 py-12 sm:px-12 lg:w-1/2 lg:px-16 xl:px-24">
+          <div className="mx-auto flex w-full max-w-md flex-col items-center text-center">
+            <span className="flex size-14 items-center justify-center rounded-full bg-warning-50 text-warning-600">
+              <HourglassIcon className="size-7" aria-hidden="true" />
+            </span>
+            <h1 className="mt-5 text-2xl font-semibold text-gray-900">Registration submitted</h1>
+            <p className="mt-2 text-sm text-gray-600">{submittedMessage}</p>
+            <p className="mt-1 text-sm text-gray-500">
+              You&apos;ll be able to sign in as soon as a WorkSphere admin approves{" "}
+              <span className="font-medium text-gray-700">{companyName}</span>.
+            </p>
+            <Link href="/login" className="mt-8 w-full">
+              <Button size="lg" className="w-full rounded-full">
+                Back to sign in
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <AuthShowcase
+          eyebrow="Almost there"
+          title="Sit tight — approval is quick."
+          description="A WorkSphere admin reviews every new workspace before it goes live, so your team's data stays protected from day one."
+        />
+      </div>
+    );
   }
 
   return (

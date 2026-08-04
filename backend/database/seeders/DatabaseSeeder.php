@@ -89,6 +89,7 @@ class DatabaseSeeder extends Seeder
             'slug' => $slug,
             'email' => strtolower(str_replace(' ', '', $slug)).'@worksphere.test',
             'subscription_plan_id' => $plan->id,
+            'status' => 'approved',
         ]);
 
         setPermissionsTeamId($company->id);

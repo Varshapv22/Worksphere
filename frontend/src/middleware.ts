@@ -11,6 +11,7 @@ const PROTECTED_PREFIXES = [
   "/departments",
   "/attendance",
   "/leave",
+  "/admin",
 ];
 
 const AUTH_PATHS = ["/login", "/register-company"];
@@ -48,6 +49,7 @@ export const config = {
     "/departments/:path*",
     "/attendance/:path*",
     "/leave/:path*",
+    "/admin/:path*",
     "/login",
     "/register-company",
   ],

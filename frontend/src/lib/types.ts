@@ -15,6 +15,7 @@ export interface User {
   company?: Company;
   roles?: string[];
   permissions?: string[];
+  is_super_admin?: boolean;
 }
 
 export interface Department {
@@ -133,4 +134,61 @@ export interface WorkforceInsight {
 export interface AdvisorResponse {
   data: WorkforceInsight[];
   generated_at: string;
+}
+
+export interface SubscriptionPlan {
+  id: number;
+  name: string;
+  slug: string;
+  price_monthly: string | number;
+  max_employees: number;
+  features?: string[] | Record<string, unknown> | null;
+  is_active: boolean;
+  company_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type CompanyStatus = "pending" | "approved" | "rejected";
+
+export interface AdminCompany {
+  id: number;
+  name: string;
+  slug: string;
+  email: string;
+  is_active: boolean;
+  status: CompanyStatus;
+  trial_ends_at: string | null;
+  employee_count: number;
+  subscription_plan: {
+    id: number;
+    name: string;
+    slug: string;
+    price_monthly: string | number;
+    max_employees: number;
+  } | null;
+  usage_percent: number | null;
+  created_at: string;
+}
+
+export interface PlatformStats {
+  companies: {
+    total: number;
+    pending: number;
+    active: number;
+    suspended: number;
+    rejected: number;
+    on_trial: number;
+    new_this_month: number;
+  };
+  employees: { total: number };
+  users: { total: number };
+  revenue: { mrr: number; arr: number };
+  companies_near_limit: Array<{
+    id: number;
+    name: string;
+    employee_count: number;
+    max_employees: number;
+    usage_percent: number;
+  }>;
 }

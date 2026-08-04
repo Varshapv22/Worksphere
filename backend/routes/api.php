@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\CompanyController as AdminCompanyController;
+use App\Http\Controllers\Api\Admin\PlatformStatsController;
+use App\Http\Controllers\Api\Admin\SubscriptionPlanController as AdminSubscriptionPlanController;
 use App\Http\Controllers\Api\AdvisorController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
@@ -42,5 +45,20 @@ Route::prefix('v1')->group(function () {
         Route::post('/leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject']);
 
         Route::get('/advisor/insights', [AdvisorController::class, 'insights']);
+    });
+
+    // Super admin only - platform management, not scoped to any tenant.
+    Route::middleware(['auth:sanctum', 'super-admin'])->prefix('admin')->group(function () {
+        Route::get('/stats', [PlatformStatsController::class, 'index']);
+
+        Route::get('/companies', [AdminCompanyController::class, 'index']);
+        Route::get('/companies/{company}', [AdminCompanyController::class, 'show']);
+        Route::patch('/companies/{company}', [AdminCompanyController::class, 'update']);
+        Route::post('/companies/{company}/approve', [AdminCompanyController::class, 'approve']);
+        Route::post('/companies/{company}/reject', [AdminCompanyController::class, 'reject']);
+
+        Route::apiResource('subscription-plans', AdminSubscriptionPlanController::class)
+            ->parameters(['subscription-plans' => 'subscriptionPlan'])
+            ->except(['show']);
     });
 });

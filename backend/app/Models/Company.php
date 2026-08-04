@@ -23,6 +23,7 @@ class Company extends Model
         'subscription_plan_id',
         'trial_ends_at',
         'is_active',
+        'status',
     ];
 
     protected function casts(): array

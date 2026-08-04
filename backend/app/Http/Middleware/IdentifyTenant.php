@@ -21,6 +21,12 @@ class IdentifyTenant
             if (is_null($user->company_id)) {
                 abort(403, 'no tenant context');
             }
+
+            $company = $user->company;
+
+            if (! $company || $company->status !== 'approved' || ! $company->is_active) {
+                abort(403, 'Your company account is not active. Please contact support.');
+            }
         }
 
         if ($user) {

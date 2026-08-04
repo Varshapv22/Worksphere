@@ -23,9 +23,11 @@ export function Breadcrumb() {
     href: "/" + segments.slice(0, i + 1).join("/"),
   }));
 
+  const homeHref = pathname.startsWith("/admin") ? "/admin" : "/dashboard";
+
   return (
     <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-gray-500">
-      <Link href="/dashboard" className="transition-colors hover:text-gray-700">
+      <Link href={homeHref} className="transition-colors hover:text-gray-700">
         Home
       </Link>
       {crumbs.map((crumb, i) => (

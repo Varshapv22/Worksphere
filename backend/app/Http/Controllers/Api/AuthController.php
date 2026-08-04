@@ -29,10 +29,13 @@ class AuthController extends Controller
         ]);
 
         [$user, $company] = DB::transaction(function () use ($validated) {
+            // New tenants start pending - a super admin must approve them
+            // before anyone can log in (see login() below).
             $company = Company::create([
                 'name' => $validated['company_name'],
                 'slug' => $validated['company_slug'],
                 'email' => $validated['company_email'],
+                'status' => 'pending',
             ]);
 
             $user = User::create([
@@ -54,12 +57,11 @@ class AuthController extends Controller
             return [$user, $company];
         });
 
-        $token = $user->createToken('api')->plainTextToken;
-
+        // No token is issued here - the account can't sign in until an
+        // admin approves the company.
         return response()->json([
-            'user' => $user->load('roles'),
+            'message' => 'Registration submitted. An administrator will review your company shortly.',
             'company' => $company,
-            'token' => $token,
         ], 201);
     }
 
@@ -81,6 +83,31 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user = Auth::user();
+
+        if (! $user->is_super_admin && $user->company_id) {
+            $company = $user->company;
+
+            if ($company->status === 'pending') {
+                return response()->json([
+                    'message' => 'Your company registration is still pending admin approval.',
+                    'company_status' => 'pending',
+                ], 403);
+            }
+
+            if ($company->status === 'rejected') {
+                return response()->json([
+                    'message' => 'Your company registration was not approved. Please contact support.',
+                    'company_status' => 'rejected',
+                ], 403);
+            }
+
+            if (! $company->is_active) {
+                return response()->json([
+                    'message' => 'Your company account has been suspended. Please contact support.',
+                    'company_status' => 'suspended',
+                ], 403);
+            }
+        }
 
         $token = $user->createToken('api')->plainTextToken;
 

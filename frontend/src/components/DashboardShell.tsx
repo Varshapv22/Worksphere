@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
+  Building2,
   CalendarDays,
   Clock,
+  CreditCard,
+  Gauge,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -18,7 +21,7 @@ import { Drawer } from "@/components/Drawer";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { cn } from "@/lib/cn";
 
-const navItems = [
+const tenantNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/advisor", label: "AI Advisor", icon: Sparkles },
   { href: "/employees", label: "Employees", icon: Users },
@@ -27,12 +30,26 @@ const navItems = [
   { href: "/leave", label: "Leave", icon: CalendarDays },
 ];
 
-function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+const superAdminNavItems = [
+  { href: "/admin", label: "Platform Dashboard", icon: Gauge },
+  { href: "/admin/companies", label: "Companies", icon: Building2 },
+  { href: "/admin/plans", label: "Plans", icon: CreditCard },
+];
+
+function NavLinks({
+  navItems,
+  pathname,
+  onNavigate,
+}: {
+  navItems: typeof tenantNavItems;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
   return (
     <nav className="flex flex-1 flex-col gap-1">
       {navItems.map((item) => {
         const Icon = item.icon;
-        const active = pathname === item.href;
+        const active = item.href === "/admin" ? pathname === item.href : pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}
@@ -70,10 +87,24 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  const isSuperAdmin = Boolean(user?.is_super_admin);
+  const inAdminArea = pathname.startsWith("/admin");
+
   async function handleLogout() {
     await logout();
     router.push("/login");
   }
+
+  // Platform super admins and tenant users see completely different
+  // workspaces - bounce anyone who lands on the wrong side.
+  useEffect(() => {
+    if (loading || !user) return;
+    if (isSuperAdmin && !inAdminArea) {
+      router.replace("/admin");
+    } else if (!isSuperAdmin && inAdminArea) {
+      router.replace("/dashboard");
+    }
+  }, [loading, user, isSuperAdmin, inAdminArea, router]);
 
   if (loading) {
     return (
@@ -83,13 +114,15 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user) {
+  if (!user || isSuperAdmin !== inAdminArea) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-gray-500">
-        Redirecting to login…
+        Redirecting…
       </div>
     );
   }
+
+  const navItems = isSuperAdmin ? superAdminNavItems : tenantNavItems;
 
   return (
     <div className="flex min-h-screen bg-surface">
@@ -100,7 +133,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </span>
           WorkSphere
         </div>
-        <NavLinks pathname={pathname} />
+        <NavLinks navItems={navItems} pathname={pathname} />
         <button
           type="button"
           onClick={handleLogout}
@@ -112,7 +145,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       </aside>
 
       <Drawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} title="WorkSphere">
-        <NavLinks pathname={pathname} onNavigate={() => setMobileNavOpen(false)} />
+        <NavLinks navItems={navItems} pathname={pathname} onNavigate={() => setMobileNavOpen(false)} />
         <button
           type="button"
           onClick={handleLogout}
@@ -136,7 +169,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             </button>
             <div className="min-w-0">
               <span className="block truncate font-semibold text-gray-900">
-                {company?.name ?? "WorkSphere"}
+                {isSuperAdmin ? "WorkSphere Platform" : company?.name ?? "WorkSphere"}
               </span>
               <div className="hidden sm:block">
                 <Breadcrumb />
