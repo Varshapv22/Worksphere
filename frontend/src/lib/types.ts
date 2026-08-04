@@ -105,3 +105,32 @@ export interface Paginated<T> {
   meta: PaginationMeta;
   links: PaginationLinks;
 }
+
+export type InsightSeverity = "critical" | "warning" | "opportunity" | "info";
+export type InsightType = "burnout" | "promotion" | "staffing" | "payroll";
+
+export interface InsightMetric {
+  label: string;
+  value: string;
+}
+
+export interface InsightItem {
+  label: string;
+  sublabel?: string | null;
+  value: string;
+}
+
+export interface WorkforceInsight {
+  id: string;
+  type: InsightType;
+  severity: InsightSeverity;
+  title: string;
+  description: string;
+  metric: InsightMetric;
+  items: InsightItem[];
+}
+
+export interface AdvisorResponse {
+  data: WorkforceInsight[];
+  generated_at: string;
+}

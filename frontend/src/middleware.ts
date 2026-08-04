@@ -6,6 +6,7 @@ const TOKEN_COOKIE = "worksphere_token";
 // src/app/(dashboard)/* pages.
 const PROTECTED_PREFIXES = [
   "/dashboard",
+  "/advisor",
   "/employees",
   "/departments",
   "/attendance",
@@ -42,6 +43,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/advisor/:path*",
     "/employees/:path*",
     "/departments/:path*",
     "/attendance/:path*",

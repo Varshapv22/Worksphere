@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   Network,
+  Sparkles,
   Users,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -19,6 +20,7 @@ import { cn } from "@/lib/cn";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/advisor", label: "AI Advisor", icon: Sparkles },
   { href: "/employees", label: "Employees", icon: Users },
   { href: "/departments", label: "Departments", icon: Network },
   { href: "/attendance", label: "Attendance", icon: Clock },

@@ -30,8 +30,12 @@ export default function RegisterCompanyPage() {
     setLoading(true);
     try {
       await registerCompany({
-        company: { name: companyName, slug: companySlug, email: companyEmail },
-        admin: { name: adminName, email: adminEmail, password: adminPassword },
+        company_name: companyName,
+        company_slug: companySlug,
+        company_email: companyEmail,
+        admin_name: adminName,
+        admin_email: adminEmail,
+        admin_password: adminPassword,
       });
       router.push("/dashboard");
     } catch (err) {
@@ -68,7 +72,7 @@ export default function RegisterCompanyPage() {
                 required
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                error={errors["company.name"]?.[0]}
+                error={errors["company_name"]?.[0]}
               />
               <Input
                 label="Company slug"
@@ -77,7 +81,7 @@ export default function RegisterCompanyPage() {
                 required
                 value={companySlug}
                 onChange={(e) => setCompanySlug(e.target.value)}
-                error={errors["company.slug"]?.[0]}
+                error={errors["company_slug"]?.[0]}
               />
             </div>
             <Input
@@ -88,7 +92,7 @@ export default function RegisterCompanyPage() {
               required
               value={companyEmail}
               onChange={(e) => setCompanyEmail(e.target.value)}
-              error={errors["company.email"]?.[0]}
+              error={errors["company_email"]?.[0]}
             />
 
             <div className="my-1 flex items-center gap-3">
@@ -106,7 +110,7 @@ export default function RegisterCompanyPage() {
               required
               value={adminName}
               onChange={(e) => setAdminName(e.target.value)}
-              error={errors["admin.name"]?.[0]}
+              error={errors["admin_name"]?.[0]}
             />
             <Input
               label="Admin email"
@@ -116,7 +120,7 @@ export default function RegisterCompanyPage() {
               required
               value={adminEmail}
               onChange={(e) => setAdminEmail(e.target.value)}
-              error={errors["admin.email"]?.[0]}
+              error={errors["admin_email"]?.[0]}
             />
             <Input
               label="Admin password"
@@ -126,7 +130,7 @@ export default function RegisterCompanyPage() {
               required
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
-              error={errors["admin.password"]?.[0]}
+              error={errors["admin_password"]?.[0]}
               endAdornment={
                 <button
                   type="button"

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdvisorController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CompanyController;
@@ -39,5 +40,7 @@ Route::prefix('v1')->group(function () {
             ->only(['index', 'store', 'show']);
         Route::post('/leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve']);
         Route::post('/leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject']);
+
+        Route::get('/advisor/insights', [AdvisorController::class, 'insights']);
     });
 });

@@ -12,8 +12,12 @@ import { apiFetch, getToken, setToken } from "./api";
 import type { Company, User } from "./types";
 
 interface RegisterCompanyPayload {
-  company: { name: string; slug: string; email: string };
-  admin: { name: string; email: string; password: string };
+  company_name: string;
+  company_slug: string;
+  company_email: string;
+  admin_name: string;
+  admin_email: string;
+  admin_password: string;
 }
 
 interface MeResponse {
