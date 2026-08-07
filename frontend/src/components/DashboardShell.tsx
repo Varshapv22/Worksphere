@@ -4,8 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
+  Award,
   BarChart3,
   Blocks,
+  BookOpen,
   Building2,
   CalendarDays,
   Clock,
@@ -37,9 +39,11 @@ const tenantNavItems = [
   { href: "/departments", label: "Departments",   icon: Network },
   { href: "/attendance",  label: "Attendance",    icon: Clock },
   { href: "/leave",       label: "Leave",         icon: CalendarDays },
-  { href: "/modules",     label: "App Marketplace", icon: Blocks },
-  { href: "/recruitment", label: "Resume Parser", icon: FileSearch },
-  { href: "/skills",      label: "Skills Matrix", icon: BarChart3 },
+  { href: "/modules",         label: "App Marketplace",     icon: Blocks },
+  { href: "/recruitment",     label: "Resume Parser",       icon: FileSearch },
+  { href: "/skills",          label: "Skills Matrix",       icon: BarChart3 },
+  { href: "/knowledge-base",  label: "Knowledge Base",      icon: BookOpen },
+  { href: "/recognition",     label: "Recognition",         icon: Award },
 ];
 
 const superAdminNavItems = [
@@ -50,9 +54,11 @@ const superAdminNavItems = [
 ];
 
 const moduleGatedRoutes: Record<string, string> = {
-  "/attendance":  "attendance",
-  "/recruitment": "recruitment",
-  "/skills":      "skills-matrix",
+  "/attendance":    "attendance",
+  "/recruitment":   "recruitment",
+  "/skills":        "skills-matrix",
+  "/knowledge-base":"knowledge-base",
+  "/recognition":   "recognition",
 };
 
 function NavLinks({

@@ -1,6 +1,8 @@
 import {
+  Award,
   BarChart3,
   Blocks,
+  BookOpen,
   Boxes,
   Clock,
   GraduationCap,
@@ -14,7 +16,9 @@ import {
 } from "lucide-react";
 
 const moduleIconMap: Record<string, LucideIcon> = {
+  Award,
   BarChart3,
+  BookOpen,
   Clock,
   Wallet,
   Handshake,

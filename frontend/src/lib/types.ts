@@ -386,6 +386,46 @@ export interface Employee360 {
   timeline: Profile360TimelineEvent[];
 }
 
+// ─── Knowledge Base ───────────────────────────────────────────────────────────
+
+export interface KbArticle {
+  id: number;
+  title: string;
+  category: string;
+  body?: string;
+  excerpt?: string;
+  tags: string[];
+  author: { id: number; name: string } | null;
+  is_published: boolean;
+  views: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface KbCategory {
+  name: string;
+  count: number;
+}
+
+// ─── Employee Recognition ─────────────────────────────────────────────────────
+
+export interface RecognitionBadge {
+  id: number;
+  name: string;
+  emoji: string;
+  description: string | null;
+  color: string;
+}
+
+export interface Recognition {
+  id: number;
+  employee: { id: number; full_name: string; designation: string | null } | null;
+  awarded_by: { id: number; name: string } | null;
+  badge: RecognitionBadge | null;
+  message: string | null;
+  created_at?: string;
+}
+
 export interface OrgNode {
   id: number;
   full_name: string;

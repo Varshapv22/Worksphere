@@ -5,7 +5,9 @@ use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Api\Admin\PlatformStatsController;
 use App\Http\Controllers\Api\Admin\SubscriptionPlanController as AdminSubscriptionPlanController;
 use App\Http\Controllers\Api\AdvisorController;
+use App\Http\Controllers\Api\KbArticleController;
 use App\Http\Controllers\Api\OrgChartController;
+use App\Http\Controllers\Api\RecognitionController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CompanyController;
@@ -73,6 +75,20 @@ Route::prefix('v1')->group(function () {
         // Organisation Chart
         Route::get('/org-chart', [OrgChartController::class, 'index']);
         Route::patch('/employees/{employee}/manager', [OrgChartController::class, 'updateManager']);
+
+        // Knowledge Base (requires Knowledge Base module)
+        Route::middleware('module:knowledge-base')->group(function () {
+            Route::get('/knowledge-base/categories', [KbArticleController::class, 'categories']);
+            Route::apiResource('knowledge-base', KbArticleController::class);
+        });
+
+        // Employee Recognition (requires Recognition module)
+        Route::middleware('module:recognition')->group(function () {
+            Route::get('/badges', [RecognitionController::class, 'badges']);
+            Route::get('/recognitions', [RecognitionController::class, 'index']);
+            Route::post('/recognitions', [RecognitionController::class, 'store']);
+            Route::delete('/recognitions/{recognition}', [RecognitionController::class, 'destroy']);
+        });
 
         // Skills Matrix (requires Skills Matrix module)
         Route::middleware('module:skills-matrix')->group(function () {
