@@ -248,6 +248,144 @@ export interface ParsedResume {
   created_at?: string;
 }
 
+// ─── Employee 360 Profile types ──────────────────────────────────────────────
+
+export interface Profile360Attendance {
+  id: number;
+  date: string;
+  clock_in: string | null;
+  clock_out: string | null;
+  work_minutes: number | null;
+}
+
+export interface Profile360LeaveBalance {
+  id: number;
+  leave_type: string;
+  year: number;
+  allocated: number;
+  used: number;
+  remaining: number;
+}
+
+export interface Profile360LeaveRequest {
+  id: number;
+  type: string;
+  start_date: string;
+  end_date: string;
+  days: number;
+  status: string;
+  reason?: string | null;
+}
+
+export interface Profile360PayrollRecord {
+  id: number;
+  period: string;
+  period_month: number;
+  period_year: number;
+  basic_salary: number;
+  allowances: number;
+  bonus: number;
+  overtime_pay: number;
+  deductions: number;
+  net_salary: number;
+  status: string;
+}
+
+export interface Profile360Review {
+  id: number;
+  review_period: string;
+  communication_rating: number;
+  technical_rating: number;
+  teamwork_rating: number;
+  leadership_rating: number;
+  overall_score: number;
+  summary?: string | null;
+  reviewer?: string | null;
+  created_at: string;
+}
+
+export interface Profile360Skill {
+  id: number;
+  name: string;
+  category?: string | null;
+  proficiency: number;
+}
+
+export interface Profile360Project {
+  id: number;
+  project_name: string;
+  role?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  status: "active" | "completed" | "on_hold";
+  created_at: string;
+}
+
+export interface Profile360Asset {
+  id: number;
+  name: string;
+  type?: string | null;
+  serial_number?: string | null;
+  assigned_date?: string | null;
+  returned_date?: string | null;
+}
+
+export interface Profile360Training {
+  id: number;
+  course_name: string;
+  provider?: string | null;
+  completed_date?: string | null;
+  status: "enrolled" | "completed" | "failed";
+}
+
+export interface Profile360Certificate {
+  id: number;
+  name: string;
+  issuer?: string | null;
+  issue_date?: string | null;
+  expiry_date?: string | null;
+}
+
+export interface Profile360Document {
+  id: number;
+  name: string;
+  type?: string | null;
+  url?: string | null;
+  created_at: string;
+}
+
+export interface Profile360Note {
+  id: number;
+  body: string;
+  type: "general" | "hr" | "performance";
+  author?: string | null;
+  created_at: string;
+}
+
+export interface Profile360TimelineEvent {
+  id: string;
+  type: string;
+  title: string;
+  description?: string | null;
+  date: string;
+}
+
+export interface Employee360 {
+  employee: Employee;
+  attendance: { recent: Profile360Attendance[] };
+  leave: { balances: Profile360LeaveBalance[]; recent: Profile360LeaveRequest[] };
+  payroll: { records: Profile360PayrollRecord[] };
+  performance: { reviews: Profile360Review[] };
+  skills: Profile360Skill[];
+  projects: Profile360Project[];
+  assets: Profile360Asset[];
+  training: Profile360Training[];
+  certificates: Profile360Certificate[];
+  documents: Profile360Document[];
+  notes: Profile360Note[];
+  timeline: Profile360TimelineEvent[];
+}
+
 export interface PlatformStats {
   companies: {
     total: number;

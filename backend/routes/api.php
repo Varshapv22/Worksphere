@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\DesignationController;
 use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\LeaveRequestController;
 use App\Http\Controllers\Api\LeaveTypeController;
+use App\Http\Controllers\Api\Employee360Controller;
 use App\Http\Controllers\Api\ModuleController;
 use App\Http\Controllers\Api\ResumeParserController;
 use App\Http\Controllers\Api\SkillController;
@@ -37,6 +38,21 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('departments', DepartmentController::class);
         Route::apiResource('designations', DesignationController::class);
         Route::apiResource('employees', EmployeeController::class);
+
+        // Employee 360 Profile
+        Route::get('/employees/{employee}/360', [Employee360Controller::class, 'show']);
+        Route::post('/employees/{employee}/notes', [Employee360Controller::class, 'storeNote']);
+        Route::delete('/employees/{employee}/notes/{note}', [Employee360Controller::class, 'destroyNote']);
+        Route::post('/employees/{employee}/projects', [Employee360Controller::class, 'storeProject']);
+        Route::delete('/employees/{employee}/projects/{project}', [Employee360Controller::class, 'destroyProject']);
+        Route::post('/employees/{employee}/assets', [Employee360Controller::class, 'storeAsset']);
+        Route::delete('/employees/{employee}/assets/{asset}', [Employee360Controller::class, 'destroyAsset']);
+        Route::post('/employees/{employee}/training', [Employee360Controller::class, 'storeTraining']);
+        Route::delete('/employees/{employee}/training/{training}', [Employee360Controller::class, 'destroyTraining']);
+        Route::post('/employees/{employee}/certificates', [Employee360Controller::class, 'storeCertificate']);
+        Route::delete('/employees/{employee}/certificates/{certificate}', [Employee360Controller::class, 'destroyCertificate']);
+        Route::post('/employees/{employee}/documents', [Employee360Controller::class, 'storeDocument']);
+        Route::delete('/employees/{employee}/documents/{document}', [Employee360Controller::class, 'destroyDocument']);
 
         Route::middleware('module:attendance')->group(function () {
             Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn']);

@@ -103,6 +103,36 @@ class Employee extends Model
             ->withTimestamps();
     }
 
+    public function notes(): HasMany
+    {
+        return $this->hasMany(EmployeeNote::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(EmployeeDocument::class);
+    }
+
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(EmployeeCertificate::class);
+    }
+
+    public function training(): HasMany
+    {
+        return $this->hasMany(EmployeeTraining::class);
+    }
+
+    public function assets(): HasMany
+    {
+        return $this->hasMany(EmployeeAsset::class);
+    }
+
+    public function projects(): HasMany
+    {
+        return $this->hasMany(EmployeeProject::class);
+    }
+
     public function getFullNameAttribute(): string
     {
         return trim("{$this->first_name} {$this->last_name}");
