@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Api\Admin\PlatformStatsController;
 use App\Http\Controllers\Api\Admin\SubscriptionPlanController as AdminSubscriptionPlanController;
 use App\Http\Controllers\Api\AdvisorController;
+use App\Http\Controllers\Api\OrgChartController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CompanyController;
@@ -68,6 +69,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject']);
 
         Route::get('/advisor/insights', [AdvisorController::class, 'insights']);
+
+        // Organisation Chart
+        Route::get('/org-chart', [OrgChartController::class, 'index']);
+        Route::patch('/employees/{employee}/manager', [OrgChartController::class, 'updateManager']);
 
         // Skills Matrix (requires Skills Matrix module)
         Route::middleware('module:skills-matrix')->group(function () {

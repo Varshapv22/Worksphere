@@ -386,6 +386,18 @@ export interface Employee360 {
   timeline: Profile360TimelineEvent[];
 }
 
+export interface OrgNode {
+  id: number;
+  full_name: string;
+  email: string;
+  employee_code: string;
+  employment_status: string;
+  manager_id: number | null;
+  designation: { id: number; title: string } | null;
+  department: { id: number; name: string } | null;
+  children: OrgNode[];
+}
+
 export interface PlatformStats {
   companies: {
     total: number;
