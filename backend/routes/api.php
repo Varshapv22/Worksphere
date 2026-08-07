@@ -14,6 +14,9 @@ use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\LeaveRequestController;
 use App\Http\Controllers\Api\LeaveTypeController;
 use App\Http\Controllers\Api\ModuleController;
+use App\Http\Controllers\Api\ResumeParserController;
+use App\Http\Controllers\Api\SkillController;
+use App\Http\Controllers\Api\SkillMatrixController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -49,6 +52,24 @@ Route::prefix('v1')->group(function () {
         Route::post('/leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject']);
 
         Route::get('/advisor/insights', [AdvisorController::class, 'insights']);
+
+        // Skills Matrix (requires Skills Matrix module)
+        Route::middleware('module:skills-matrix')->group(function () {
+            Route::get('/skills', [SkillController::class, 'index']);
+            Route::post('/skills', [SkillController::class, 'store']);
+            Route::put('/skills/{skill}', [SkillController::class, 'update']);
+            Route::delete('/skills/{skill}', [SkillController::class, 'destroy']);
+            Route::get('/skills/matrix', [SkillMatrixController::class, 'index']);
+            Route::post('/skills/matrix/{employee}', [SkillMatrixController::class, 'update']);
+        });
+
+        // Resume Parser (requires Recruitment module)
+        Route::middleware('module:recruitment')->group(function () {
+            Route::get('/resumes', [ResumeParserController::class, 'index']);
+            Route::post('/resumes/parse', [ResumeParserController::class, 'store']);
+            Route::get('/resumes/{parsedResume}', [ResumeParserController::class, 'show']);
+            Route::delete('/resumes/{parsedResume}', [ResumeParserController::class, 'destroy']);
+        });
 
         // App marketplace - which modules this company has installed.
         Route::get('/modules', [ModuleController::class, 'index']);

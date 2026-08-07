@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/lib/toast";
+import { ThemeProvider } from "@/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,17 +19,32 @@ export const metadata: Metadata = {
   description: "Multi-tenant HR SaaS",
 };
 
+/* Prevents flash of wrong theme before React hydrates */
+const noFlashScript = `
+(function(){
+  try {
+    var t = localStorage.getItem('worksphere_theme');
+    if (t === 'dark') { document.documentElement.classList.add('dark'); }
+    else if (!t && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('dark');
+    }
+  } catch(e){}
+})();
+`;
+
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ToastProvider>{children}</ToastProvider>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Runs synchronously before first paint — no theme flash */}
+        <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

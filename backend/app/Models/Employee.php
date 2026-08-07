@@ -96,6 +96,13 @@ class Employee extends Model
         return $this->hasMany(PerformanceReview::class);
     }
 
+    public function skills(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Skill::class, 'employee_skill')
+            ->withPivot('proficiency', 'notes')
+            ->withTimestamps();
+    }
+
     public function getFullNameAttribute(): string
     {
         return trim("{$this->first_name} {$this->last_name}");

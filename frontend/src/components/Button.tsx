@@ -15,11 +15,13 @@ const variantClasses: Record<Variant, string> = {
   primary:
     "bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 disabled:bg-brand-300 focus-visible:outline-brand-600",
   secondary:
-    "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 active:bg-gray-100 disabled:bg-gray-50 disabled:text-gray-400 focus-visible:outline-brand-600",
+    "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 active:bg-gray-100 disabled:bg-gray-50 disabled:text-gray-400 focus-visible:outline-brand-600 " +
+    "dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600 dark:active:bg-gray-500 dark:disabled:bg-gray-800 dark:disabled:text-gray-500",
   danger:
     "bg-danger-600 text-white hover:bg-red-700 active:bg-red-800 disabled:bg-red-300 focus-visible:outline-danger-600",
   ghost:
-    "bg-transparent text-gray-600 hover:bg-gray-100 active:bg-gray-200 disabled:text-gray-300 focus-visible:outline-brand-600",
+    "bg-transparent text-gray-600 hover:bg-gray-100 active:bg-gray-200 disabled:text-gray-300 focus-visible:outline-brand-600 " +
+    "dark:text-gray-400 dark:hover:bg-gray-700 dark:active:bg-gray-600",
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -30,15 +32,7 @@ const sizeClasses: Record<Size, string> = {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   function Button(
-    {
-      variant = "primary",
-      size = "md",
-      isLoading = false,
-      className,
-      disabled,
-      children,
-      ...rest
-    },
+    { variant = "primary", size = "md", isLoading = false, className, disabled, children, ...rest },
     ref
   ) {
     return (

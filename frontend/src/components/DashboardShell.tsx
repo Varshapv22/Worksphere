@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
+  BarChart3,
   Blocks,
   Building2,
   CalendarDays,
   Clock,
   CreditCard,
+  FileSearch,
   Gauge,
   LayoutDashboard,
   LogOut,
@@ -20,31 +22,35 @@ import {
 import { useAuth } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
 import type { Module } from "@/lib/types";
+import { ModulesContext } from "@/lib/modulesContext";
 import { Drawer } from "@/components/Drawer";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/cn";
 
 const tenantNavItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/advisor", label: "AI Advisor", icon: Sparkles },
-  { href: "/employees", label: "Employees", icon: Users },
-  { href: "/departments", label: "Departments", icon: Network },
-  { href: "/attendance", label: "Attendance", icon: Clock },
-  { href: "/leave", label: "Leave", icon: CalendarDays },
-  { href: "/modules", label: "App Marketplace", icon: Blocks },
+  { href: "/dashboard",   label: "Dashboard",     icon: LayoutDashboard },
+  { href: "/advisor",     label: "AI Advisor",    icon: Sparkles },
+  { href: "/employees",   label: "Employees",     icon: Users },
+  { href: "/departments", label: "Departments",   icon: Network },
+  { href: "/attendance",  label: "Attendance",    icon: Clock },
+  { href: "/leave",       label: "Leave",         icon: CalendarDays },
+  { href: "/modules",     label: "App Marketplace", icon: Blocks },
+  { href: "/recruitment", label: "Resume Parser", icon: FileSearch },
+  { href: "/skills",      label: "Skills Matrix", icon: BarChart3 },
 ];
 
 const superAdminNavItems = [
-  { href: "/admin", label: "Platform Dashboard", icon: Gauge },
-  { href: "/admin/companies", label: "Companies", icon: Building2 },
-  { href: "/admin/plans", label: "Plans", icon: CreditCard },
-  { href: "/admin/modules", label: "Modules", icon: Blocks },
+  { href: "/admin",           label: "Platform Dashboard", icon: Gauge },
+  { href: "/admin/companies", label: "Companies",          icon: Building2 },
+  { href: "/admin/plans",     label: "Plans",              icon: CreditCard },
+  { href: "/admin/modules",   label: "Modules",            icon: Blocks },
 ];
 
-// Nav items whose route belongs to an installable module - hidden unless
-// that module is enabled for the current company.
 const moduleGatedRoutes: Record<string, string> = {
-  "/attendance": "attendance",
+  "/attendance":  "attendance",
+  "/recruitment": "recruitment",
+  "/skills":      "skills-matrix",
 };
 
 function NavLinks({
@@ -60,7 +66,10 @@ function NavLinks({
     <nav className="flex flex-1 flex-col gap-1">
       {navItems.map((item) => {
         const Icon = item.icon;
-        const active = item.href === "/admin" ? pathname === item.href : pathname.startsWith(item.href);
+        const active =
+          item.href === "/admin"
+            ? pathname === item.href
+            : pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}
@@ -70,8 +79,8 @@ function NavLinks({
               "flex items-center gap-2.5 rounded-lg border-l-2 px-2.5 py-2 text-sm font-medium transition-colors",
               "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
               active
-                ? "border-brand-600 bg-brand-50 text-brand-700"
-                : "border-transparent text-gray-600 hover:bg-gray-100"
+                ? "border-brand-600 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400"
+                : "border-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700/50"
             )}
           >
             <Icon className="size-4.5" aria-hidden="true" />
@@ -97,8 +106,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  // null = not loaded yet (or fetch failed) - fail open so a transient
-  // error never hides nav items the company actually has access to.
   const [enabledModuleSlugs, setEnabledModuleSlugs] = useState<Set<string> | null>(null);
 
   const isSuperAdmin = Boolean(user?.is_super_admin);
@@ -115,32 +122,23 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     apiFetch<{ data: Module[] }>("/modules")
       .then((res) => {
         if (cancelled) return;
-        setEnabledModuleSlugs(new Set(res.data.filter((m) => m.is_enabled).map((m) => m.slug)));
+        setEnabledModuleSlugs(
+          new Set(res.data.filter((m) => m.is_enabled).map((m) => m.slug))
+        );
       })
-      .catch(() => {
-        // Leave it null - nav items stay visible rather than disappearing.
-      });
-    return () => {
-      cancelled = true;
-    };
-    // Re-check on every route change so toggling a module in the app
-    // marketplace is reflected in the nav as soon as the user navigates.
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, [isSuperAdmin, user, pathname]);
 
-  // Platform super admins and tenant users see completely different
-  // workspaces - bounce anyone who lands on the wrong side.
   useEffect(() => {
     if (loading || !user) return;
-    if (isSuperAdmin && !inAdminArea) {
-      router.replace("/admin");
-    } else if (!isSuperAdmin && inAdminArea) {
-      router.replace("/dashboard");
-    }
+    if (isSuperAdmin && !inAdminArea) router.replace("/admin");
+    else if (!isSuperAdmin && inAdminArea) router.replace("/dashboard");
   }, [loading, user, isSuperAdmin, inAdminArea, router]);
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-gray-500">
+      <div className="flex min-h-screen items-center justify-center text-sm text-gray-500 dark:text-gray-400">
         Loading…
       </div>
     );
@@ -148,22 +146,26 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   if (!user || isSuperAdmin !== inAdminArea) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-gray-500">
+      <div className="flex min-h-screen items-center justify-center text-sm text-gray-500 dark:text-gray-400">
         Redirecting…
       </div>
     );
   }
 
-  const navItems = (isSuperAdmin ? superAdminNavItems : tenantNavItems).filter((item) => {
-    const requiredSlug = moduleGatedRoutes[item.href];
-    if (!requiredSlug || !enabledModuleSlugs) return true;
-    return enabledModuleSlugs.has(requiredSlug);
-  });
+  const navItems = (isSuperAdmin ? superAdminNavItems : tenantNavItems).filter(
+    (item) => {
+      const requiredSlug = moduleGatedRoutes[item.href];
+      if (!requiredSlug || !enabledModuleSlugs) return true;
+      return enabledModuleSlugs.has(requiredSlug);
+    }
+  );
 
   return (
+    <ModulesContext.Provider value={{ enabledSlugs: isSuperAdmin ? new Set() : enabledModuleSlugs }}>
     <div className="flex min-h-screen bg-surface">
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-gray-200 bg-white p-4 sm:flex">
-        <div className="mb-6 flex items-center gap-2 px-1 text-lg font-bold text-brand-700">
+      {/* ── Sidebar ── */}
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900 sm:flex">
+        <div className="mb-6 flex items-center gap-2 px-1 text-lg font-bold text-brand-700 dark:text-brand-400">
           <span className="flex size-7 items-center justify-center rounded-lg bg-brand-600 text-sm text-white">
             W
           </span>
@@ -173,54 +175,64 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-4 flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-danger-50 hover:text-danger-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+          className="mt-4 flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-danger-50 hover:text-danger-700 dark:text-gray-400 dark:hover:bg-danger-900/30 dark:hover:text-danger-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
         >
           <LogOut className="size-4.5" aria-hidden="true" />
           Logout
         </button>
       </aside>
 
+      {/* ── Mobile drawer ── */}
       <Drawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} title="WorkSphere">
         <NavLinks navItems={navItems} pathname={pathname} onNavigate={() => setMobileNavOpen(false)} />
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-4 flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-danger-700 transition-colors hover:bg-danger-50"
+          className="mt-4 flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-danger-700 transition-colors hover:bg-danger-50 dark:text-danger-400 dark:hover:bg-danger-900/30"
         >
           <LogOut className="size-4.5" aria-hidden="true" />
           Logout
         </button>
       </Drawer>
 
+      {/* ── Main area ── */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
+        <header className="flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
-              className="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 sm:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+              className="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 sm:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
               aria-label="Open menu"
             >
               <Menu className="size-5" aria-hidden="true" />
             </button>
             <div className="min-w-0">
-              <span className="block truncate font-semibold text-gray-900">
-                {isSuperAdmin ? "WorkSphere Platform" : company?.name ?? "WorkSphere"}
+              <span className="block truncate font-semibold text-gray-900 dark:text-gray-100">
+                {isSuperAdmin ? "WorkSphere Platform" : (company?.name ?? "WorkSphere")}
               </span>
               <div className="hidden sm:block">
                 <Breadcrumb />
               </div>
             </div>
           </div>
+
           <div className="flex shrink-0 items-center gap-3">
-            <span className="hidden text-sm text-gray-600 sm:inline">{user.name}</span>
-            <span className="flex size-8 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+            {/* Theme toggle */}
+            <ThemeToggle />
+
+            <span className="hidden text-sm text-gray-600 dark:text-gray-400 sm:inline">
+              {user.name}
+            </span>
+            <span className="flex size-8 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
               {initials(user.name)}
             </span>
           </div>
         </header>
+
         <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>
+    </ModulesContext.Provider>
   );
 }

@@ -188,6 +188,66 @@ export interface Module {
   updated_at?: string;
 }
 
+export interface Skill {
+  id: number;
+  name: string;
+  category?: string | null;
+  created_at?: string;
+}
+
+export interface SkillMatrixEmployee {
+  id: number;
+  full_name: string;
+  employee_code: string;
+  department?: string | null;
+  skill_map: Record<number, number>; // skill_id → proficiency (1-5)
+}
+
+export interface SkillMatrix {
+  skills: Skill[];
+  employees: SkillMatrixEmployee[];
+}
+
+export type ResumeStatus = "processing" | "completed" | "failed";
+
+export interface ResumeExperience {
+  title: string;
+  company: string;
+  duration: string;
+  description?: string;
+}
+
+export interface ResumeEducation {
+  degree: string;
+  institution: string;
+  year?: string | null;
+  gpa?: string | null;
+}
+
+export interface ResumeProject {
+  name: string;
+  description?: string;
+  technologies?: string[];
+}
+
+export interface ParsedResume {
+  id: number;
+  file_name: string;
+  status: ResumeStatus;
+  error_message?: string | null;
+  candidate_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  summary?: string | null;
+  skills: string[];
+  experience: ResumeExperience[];
+  education: ResumeEducation[];
+  companies: string[];
+  projects: ResumeProject[];
+  certifications: string[];
+  created_at?: string;
+}
+
 export interface PlatformStats {
   companies: {
     total: number;

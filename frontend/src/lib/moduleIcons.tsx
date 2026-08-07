@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Blocks,
   Boxes,
   Clock,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 
 const moduleIconMap: Record<string, LucideIcon> = {
+  BarChart3,
   Clock,
   Wallet,
   Handshake,
