@@ -426,6 +426,194 @@ export interface Recognition {
   created_at?: string;
 }
 
+// ─── Career Roadmap ───────────────────────────────────────────────────────────
+
+export interface CareerResource {
+  title: string;
+  url: string;
+  type?: string;
+}
+
+export interface CareerStep {
+  id: number;
+  title: string;
+  description?: string | null;
+  skills_required: string[];
+  resources: CareerResource[];
+  sort_order: number;
+}
+
+export interface CareerTrack {
+  id: number;
+  title: string;
+  description?: string | null;
+  target_role: string;
+  is_active: boolean;
+  sort_order: number;
+  steps: CareerStep[];
+  created_at?: string;
+}
+
+export interface CareerEnrollment {
+  id: number;
+  employee_id: number;
+  career_track_id?: number;
+  employee?: { id: number; full_name: string; designation: string | null } | null;
+  track?: CareerTrack;
+  current_step: number;
+  started_at?: string | null;
+  completed_at?: string | null;
+}
+
+// ─── Meetings ─────────────────────────────────────────────────────────────────
+
+export type ActionItemStatus = "open" | "in_progress" | "done";
+
+export interface MeetingActionItem {
+  id: number;
+  meeting_id: number;
+  title: string;
+  description?: string | null;
+  assignee?: { id: number; full_name: string } | null;
+  due_date?: string | null;
+  status: ActionItemStatus;
+  completed_at?: string | null;
+}
+
+export interface Meeting {
+  id: number;
+  title: string;
+  description?: string | null;
+  notes?: string | null;
+  meeting_at: string;
+  organizer?: { id: number; name: string } | null;
+  attendee_ids: number[];
+  action_items: MeetingActionItem[];
+  created_at?: string;
+}
+
+// ─── Asset Lifecycle ──────────────────────────────────────────────────────────
+
+export type AssetStatus = "purchased" | "assigned" | "maintenance" | "returned" | "disposed";
+
+export interface Asset {
+  id: number;
+  name: string;
+  type?: string | null;
+  serial_number?: string | null;
+  brand?: string | null;
+  model?: string | null;
+  purchase_date?: string | null;
+  purchase_cost?: number | null;
+  warranty_expiry?: string | null;
+  status: AssetStatus;
+  assigned_to?: { id: number; full_name: string } | null;
+  assigned_date?: string | null;
+  returned_date?: string | null;
+  notes?: string | null;
+  created_at?: string;
+}
+
+// ─── Compliance ───────────────────────────────────────────────────────────────
+
+export type ComplianceType =
+  | "passport" | "visa" | "certification" | "insurance"
+  | "medical" | "drivers_license" | "contract" | "other";
+
+export type ComplianceStatus = "valid" | "expiring_soon" | "expired";
+
+export interface ComplianceItem {
+  id: number;
+  type: ComplianceType;
+  name: string;
+  document_number?: string | null;
+  issue_date?: string | null;
+  expiry_date?: string | null;
+  status: ComplianceStatus;
+  notes?: string | null;
+  employee?: { id: number; full_name: string } | null;
+  days_until_expiry?: number | null;
+  created_at?: string;
+}
+
+// ─── Payroll Config ───────────────────────────────────────────────────────────
+
+export interface PayrollConfig {
+  id: number;
+  country_code: string;
+  country_name: string;
+  currency_code: string;
+  currency_symbol: string;
+  tax_rate: number;
+  provident_fund_rate: number;
+  payroll_frequency: "weekly" | "bi_weekly" | "monthly";
+  timezone: string;
+  holidays?: { name: string; date: string }[];
+  tax_brackets?: { min: number; max: number; rate: number }[];
+  is_active: boolean;
+}
+
+// ─── Developer API ────────────────────────────────────────────────────────────
+
+export interface ApiKey {
+  id: number;
+  name: string;
+  key_preview: string;
+  key?: string;  // returned only on creation
+  scopes: string[];
+  is_active: boolean;
+  last_used_at?: string | null;
+  expires_at?: string | null;
+  created_at?: string;
+}
+
+export interface Webhook {
+  id: number;
+  name: string;
+  url: string;
+  events: string[];
+  secret?: string; // returned only on creation
+  is_active: boolean;
+  last_triggered_at?: string | null;
+  failure_count: number;
+  created_at?: string;
+}
+
+// ─── White Label ──────────────────────────────────────────────────────────────
+
+export interface WhiteLabelConfig {
+  app_name?: string | null;
+  logo_url?: string | null;
+  favicon_url?: string | null;
+  primary_color?: string | null;
+  secondary_color?: string | null;
+  login_message?: string | null;
+  support_email?: string | null;
+  custom_domain?: string | null;
+  email_footer?: Record<string, string> | null;
+}
+
+// ─── Analytics ────────────────────────────────────────────────────────────────
+
+export interface AnalyticsOverview {
+  headcount: {
+    total: number;
+    active: number;
+    new_hires_month: number;
+    terminated_month: number;
+  };
+  attendance: {
+    rate_percent: number;
+    avg_daily_present: number;
+    approved_leaves_month: number;
+  };
+  payroll: {
+    this_month: number;
+    last_month: number;
+    growth_pct: number;
+  };
+}
+
 export interface OrgNode {
   id: number;
   full_name: string;
