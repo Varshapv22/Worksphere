@@ -7,6 +7,8 @@ set -e
 # www-data and needs write access to storage/ and bootstrap/cache/
 # regardless of host UID -- fix it up on every container start rather than
 # relying on a one-time build-time chown that a bind mount would shadow.
-chmod -R ug+rwX /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
+# `ug+rwX` isn't enough: www-data (uid 82) is neither the host-uid owner nor
+# in the host-gid group on a bind mount, so it needs the "other" bit too.
+chmod -R ugo+rwX /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 
 exec "$@"

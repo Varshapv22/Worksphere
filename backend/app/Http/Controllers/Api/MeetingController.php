@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
+
 use App\Models\Meeting;
 use App\Models\MeetingActionItem;
 use Illuminate\Http\JsonResponse;

@@ -101,6 +101,14 @@ services:
     # Laravel's recommended approach when there's no host cron available:
     # invoke the scheduler once a minute in a loop.
     command: ["sh", "-c", "while true; do php artisan schedule:run; sleep 60; done"]
+    # The backend image's HEALTHCHECK curls the internal nginx+php-fpm pair
+    # (started by supervisord) on :8080, but this service overrides CMD to
+    # run the scheduler loop directly instead -- nothing ever listens on
+    # :8080 here, so that check would always fail. Disable it; scheduler
+    # health is really "is the process still running", which `restart:
+    # unless-stopped` already covers.
+    healthcheck:
+      disable: true
     volumes:
       - ./backend:/var/www/html
       - backend_vendor:/var/www/html/vendor

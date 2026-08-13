@@ -441,7 +441,7 @@ export default function KnowledgeBasePage() {
               <div className="pt-5">
                 {/* Category + meta */}
                 <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <Badge variant="default">{viewArticle.category}</Badge>
+                  <Badge variant="neutral">{viewArticle.category}</Badge>
                   {viewArticle.tags?.map((t) => (
                     <span key={t} className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-400">
                       <Tag className="size-2.5" />{t}
@@ -516,7 +516,7 @@ export default function KnowledgeBasePage() {
                       className="group flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-4 text-left transition-all hover:border-brand-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-brand-600"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <Badge variant="default" className="shrink-0">{article.category}</Badge>
+                        <Badge variant="neutral" className="shrink-0">{article.category}</Badge>
                         <div className="flex shrink-0 items-center gap-1 text-xs text-gray-400">
                           <Eye className="size-3" />
                           {article.views}

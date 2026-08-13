@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
+
 use App\Models\ApiKey;
 use App\Models\Webhook;
 use Illuminate\Http\JsonResponse;

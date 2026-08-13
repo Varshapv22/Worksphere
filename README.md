@@ -8,6 +8,45 @@ on top of the foundation.
 
 ---
 
+## Features
+
+Multi-tenant SaaS core:
+
+- **Authentication & tenancy** — Laravel Sanctum token auth, per-company tenant isolation
+  (`IdentifyTenant` middleware), separate super-admin area (`/admin`) with its own auth
+  guard.
+- **Internal App Marketplace** — company admins enable/disable HR modules from a catalog
+  (`/modules`); super admins manage the module catalog itself (`/admin/modules`).
+  Module-gated pages fall back to a "not enabled" screen when a module is off.
+- **Platform admin** — super-admin dashboard, company management, subscription plans.
+
+Employee & org management:
+
+- **Employees** — employee directory and records.
+- **Org Chart** — drag-and-drop organization chart builder.
+- **Departments** — department management.
+- **Employee 360 Profile** — comprehensive multi-tab employee profile view.
+- **AI Advisor** — AI-assisted HR guidance.
+
+HR modules (each gated by the App Marketplace, module slug in parens):
+
+- **Attendance** (`attendance`) — clock in/out and attendance tracking.
+- **Leave** — leave/time-off requests and approvals.
+- **Recruitment / Resume Parser** (`recruitment`) — applicant/resume intake.
+- **Skills Matrix** (`skills-matrix`) — employee skills tracking.
+- **Knowledge Base** (`knowledge-base`) — internal documentation/articles.
+- **Recognition** (`recognition`) — employee recognition and kudos.
+- **Career Roadmap** (`career-roadmap`) — career progression planning.
+- **Meetings** (`meetings`) — meeting scheduling.
+- **Asset Management** (`asset-management`) — company asset tracking and assignment.
+- **Compliance** (`compliance`) — compliance tracking.
+- **Analytics** (`analytics`) — HR analytics and reporting.
+- **Payroll** (`payroll`) — Payroll Simulator and Payroll Config.
+- **Developer API** (`developer-api`) — API access for integrations.
+- **White Label** (`white-label`) — custom branding (`/settings/branding`).
+
+---
+
 ## 1. Prerequisites
 
 - PHP 8.2+ and the usual Laravel extensions (`pdo_mysql`, `mbstring`, `bcmath`, `exif`,

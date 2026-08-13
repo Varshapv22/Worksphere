@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
+
 use App\Models\CareerTrack;
 use App\Models\EmployeeCareerTrack;
 use Illuminate\Http\JsonResponse;

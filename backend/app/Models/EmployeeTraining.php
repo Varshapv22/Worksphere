@@ -10,6 +10,8 @@ class EmployeeTraining extends Model
 {
     use BelongsToTenant;
 
+    protected $table = 'employee_training';
+
     protected $fillable = ['company_id', 'employee_id', 'course_name', 'provider', 'completed_date', 'status'];
 
     protected function casts(): array
