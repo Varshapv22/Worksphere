@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\DesignationController;
 use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\Api\HolidayController;
 use App\Http\Controllers\Api\LeaveRequestController;
 use App\Http\Controllers\Api\LeaveTypeController;
 use App\Http\Controllers\Api\Employee360Controller;
@@ -79,6 +80,10 @@ Route::prefix('v1')->group(function () {
             ->only(['index', 'store', 'show']);
         Route::post('/leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve']);
         Route::post('/leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject']);
+
+        Route::get('/holidays', [HolidayController::class, 'index']);
+        Route::post('/holidays', [HolidayController::class, 'store']);
+        Route::delete('/holidays/{holiday}', [HolidayController::class, 'destroy']);
 
         Route::get('/advisor/insights', [AdvisorController::class, 'insights']);
 

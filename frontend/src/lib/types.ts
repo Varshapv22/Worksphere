@@ -91,6 +91,13 @@ export interface LeaveRequest {
   created_at?: string;
 }
 
+export interface Holiday {
+  id: number;
+  name: string;
+  date: string;
+  created_at?: string;
+}
+
 export interface PaginationMeta {
   current_page: number;
   last_page: number;
