@@ -56,12 +56,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function loadMe() {
       const token = getToken();
       if (!token) {
+        // No localStorage token, but a stale cookie may still be sitting in
+        // the browser from an earlier session — middleware.ts only checks
+        // cookie *presence*, so an orphaned cookie causes an infinite
+        // /login <-> /dashboard redirect loop unless we clear it here too.
+        setToken(null);
         setLoading(false);
         return;
       }
       try {
         const res = await apiFetch<MeResponse>("/auth/me");
         if (cancelled) return;
+        setToken(token); // re-sync the cookie in case it expired independently of localStorage
         setUser(res.user);
         setCompany(res.user.company ?? null);
       } catch {

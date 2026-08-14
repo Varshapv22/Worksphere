@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AdvisorController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\CareerRoadmapController;
+use App\Http\Controllers\Api\ChatbotController;
 use App\Http\Controllers\Api\ComplianceController;
 use App\Http\Controllers\Api\DeveloperApiController;
 use App\Http\Controllers\Api\KbArticleController;
@@ -196,6 +197,11 @@ Route::prefix('v1')->group(function () {
         Route::middleware('module:white-label')->group(function () {
             Route::get('/white-label', [WhiteLabelController::class, 'show']);
             Route::patch('/white-label', [WhiteLabelController::class, 'update']);
+        });
+
+        // AI Assistant (requires AI Assistant module)
+        Route::middleware('module:ai-assistant')->group(function () {
+            Route::post('/chatbot/ask', [ChatbotController::class, 'ask']);
         });
     });
 

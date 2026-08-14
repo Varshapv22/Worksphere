@@ -8,6 +8,7 @@ import {
   BarChart3,
   Blocks,
   BookOpen,
+  Bot,
   Boxes,
   Building2,
   CalendarCheck,
@@ -53,6 +54,7 @@ const tenantNavItems = [
   { href: "/skills",            label: "Skills Matrix",     icon: BarChart3 },
   { href: "/knowledge-base",    label: "Knowledge Base",    icon: BookOpen },
   { href: "/recognition",       label: "Recognition",       icon: Award },
+  { href: "/ai-assistant",      label: "AI Assistant",      icon: Bot },
   { href: "/career",            label: "Career Roadmap",    icon: TrendingUp },
   { href: "/meetings",          label: "Meetings",          icon: CalendarCheck },
   { href: "/assets",            label: "Assets",            icon: Boxes },
@@ -77,6 +79,7 @@ const moduleGatedRoutes: Record<string, string> = {
   "/skills":            "skills-matrix",
   "/knowledge-base":    "knowledge-base",
   "/recognition":       "recognition",
+  "/ai-assistant":      "ai-assistant",
   "/career":            "career-roadmap",
   "/meetings":          "meetings",
   "/assets":            "asset-management",
@@ -166,7 +169,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   }, [isSuperAdmin, user, pathname]);
 
   useEffect(() => {
-    if (loading || !user) return;
+    if (loading) return;
+    if (!user) { router.replace("/login"); return; }
     if (isSuperAdmin && !inAdminArea) router.replace("/admin");
     else if (!isSuperAdmin && inAdminArea) router.replace("/dashboard");
   }, [loading, user, isSuperAdmin, inAdminArea, router]);

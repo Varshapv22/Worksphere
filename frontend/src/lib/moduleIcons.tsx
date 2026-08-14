@@ -3,6 +3,7 @@ import {
   BarChart3,
   Blocks,
   BookOpen,
+  Bot,
   Boxes,
   Clock,
   GraduationCap,
@@ -28,6 +29,7 @@ const moduleIconMap: Record<string, LucideIcon> = {
   UserCheck,
   GraduationCap,
   UserPlus,
+  Bot,
 };
 
 export function moduleIcon(icon?: string | null): LucideIcon {
