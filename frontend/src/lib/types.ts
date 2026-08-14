@@ -69,10 +69,10 @@ export interface AttendanceRecord {
 export interface LeaveType {
   id: number;
   name: string;
-  default_days?: number | null;
+  days_per_year?: number | null;
 }
 
-export type LeaveStatus = "pending" | "approved" | "rejected";
+export type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
 
 export interface LeaveRequest {
   id: number;
@@ -82,8 +82,12 @@ export interface LeaveRequest {
   leave_type?: LeaveType;
   start_date: string;
   end_date: string;
+  days: number;
+  is_half_day: boolean;
   reason?: string | null;
   status: LeaveStatus;
+  approved_by?: string | null;
+  approved_at?: string | null;
   created_at?: string;
 }
 

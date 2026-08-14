@@ -18,6 +18,7 @@ class LeaveRequest extends Model
         'start_date',
         'end_date',
         'days',
+        'is_half_day',
         'reason',
         'status',
         'approved_by',
@@ -30,6 +31,7 @@ class LeaveRequest extends Model
             'start_date' => 'date',
             'end_date' => 'date',
             'days' => 'decimal:1',
+            'is_half_day' => 'boolean',
             'approved_at' => 'datetime',
         ];
     }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Bot, Loader2, Mic, MicOff, Send, User, Volume2, VolumeX } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/Button";
@@ -106,8 +106,12 @@ export default function AiAssistantPage() {
       });
       setMessages((prev) => [...prev, { id: ++idRef.current, role: "model", text: res.reply }]);
       if (speakEnabled) speak(res.reply);
-    } catch {
-      toast.error("The assistant couldn't answer that. Please try again.");
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError && err.message
+          ? err.message
+          : "The assistant couldn't answer that. Please try again."
+      );
     } finally {
       setSending(false);
     }

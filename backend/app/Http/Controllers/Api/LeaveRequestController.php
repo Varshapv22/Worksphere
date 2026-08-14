@@ -96,6 +96,7 @@ class LeaveRequestController extends Controller
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
                 'days' => $validated['days'],
+                'is_half_day' => $validated['is_half_day'] ?? false,
                 'reason' => $validated['reason'] ?? null,
                 'status' => 'pending',
             ]);

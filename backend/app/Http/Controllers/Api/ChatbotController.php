@@ -9,10 +9,11 @@ use App\Models\LeaveRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ChatbotController extends Controller
 {
-    private const MODEL = 'gemini-3.5-flash';
+    private const MODEL = 'gemini-3.6-flash';
 
     private const MAX_TOOL_ROUNDS = 4;
 
@@ -58,7 +59,20 @@ class ChatbotController extends Controller
             );
 
             if ($response->failed()) {
-                return response()->json(['message' => 'AI request failed: '.$response->body()], 502);
+                Log::error('Chatbot Gemini request failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                if ($response->status() === 429) {
+                    return response()->json([
+                        'message' => 'The AI assistant has hit its usage limit for now (free-tier quota). Please wait a minute and try again.',
+                    ], 429);
+                }
+
+                return response()->json([
+                    'message' => 'The AI assistant is temporarily unavailable. Please try again shortly.',
+                ], 502);
             }
 
             $parts = $response->json('candidates.0.content.parts', []);
@@ -164,6 +178,19 @@ TEXT;
                 ],
             ],
             [
+                'name' => 'list_employees',
+                'description' => 'List active employees by name with department and designation, optionally filtered by department name. Use this whenever the user asks to see, name, or list employees (e.g. "list them" after a headcount question).',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'department' => [
+                            'type' => 'string',
+                            'description' => 'Department name to filter by (optional).',
+                        ],
+                    ],
+                ],
+            ],
+            [
                 'name' => 'get_employee_info',
                 'description' => "Look up a specific employee's details (department, designation, manager, join date, today's attendance/leave status) by name.",
                 'parameters' => [
@@ -193,6 +220,7 @@ TEXT;
             'get_present_employees' => $this->attendanceByStatus($date, ['present', 'half_day']),
             'get_pending_leave_requests' => $this->pendingLeaveRequests(),
             'get_headcount' => $this->headcount($args['department'] ?? null),
+            'list_employees' => $this->listEmployees($args['department'] ?? null),
             'get_employee_info' => $this->employeeInfo($args['name'] ?? ''),
             default => ['error' => "Unknown tool: {$name}"],
         };
@@ -262,6 +290,27 @@ TEXT;
         }
 
         return ['count' => $query->count(), 'department' => $department];
+    }
+
+    private function listEmployees(?string $department): array
+    {
+        $query = Employee::query()->where('employment_status', 'active')->with(['department', 'designation']);
+
+        if (! empty($department)) {
+            $query->whereHas('department', fn ($q) => $q->where('name', 'like', "%{$department}%"));
+        }
+
+        return $query->orderBy('first_name')
+            ->limit(100)
+            ->get()
+            ->map(fn (Employee $e) => [
+                'name' => $e->full_name,
+                'employee_code' => $e->employee_code,
+                'department' => $e->department?->name,
+                'designation' => $e->designation?->title,
+            ])
+            ->values()
+            ->all();
     }
 
     private function employeeInfo(string $name): array

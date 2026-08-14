@@ -22,6 +22,7 @@ class StoreLeaveRequestRequest extends FormRequest
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'days' => ['required', 'numeric', 'min:0.5'],
+            'is_half_day' => ['sometimes', 'boolean'],
             'reason' => ['nullable', 'string'],
         ];
     }

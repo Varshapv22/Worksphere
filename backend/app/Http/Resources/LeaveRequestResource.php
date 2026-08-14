@@ -26,6 +26,7 @@ class LeaveRequestResource extends JsonResource
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
             'days' => (float) $this->days,
+            'is_half_day' => (bool) $this->is_half_day,
             'reason' => $this->reason,
             'status' => $this->status,
             'approved_by' => $this->whenLoaded('approver', fn () => $this->approver?->name),
