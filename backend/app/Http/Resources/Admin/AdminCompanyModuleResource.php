@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Admin;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class ModuleResource extends JsonResource
+class AdminCompanyModuleResource extends JsonResource
 {
     /**
      * @return array<string, mixed>
@@ -21,8 +21,7 @@ class ModuleResource extends JsonResource
             'category' => $this->category,
             'is_available' => $this->is_available,
             'is_enabled' => (bool) $this->is_enabled,
-            'is_granted' => (bool) ($this->is_granted ?? true),
-            'enabled_at' => $this->enabled_at ?? null,
+            'is_granted' => (bool) $this->is_granted,
         ];
     }
 }

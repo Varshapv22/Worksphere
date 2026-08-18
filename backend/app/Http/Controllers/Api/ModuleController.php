@@ -28,6 +28,8 @@ class ModuleController extends Controller
                 $pivot = $enabledByModuleId->get($module->id)?->pivot;
                 $module->is_enabled = (bool) ($pivot->is_enabled ?? false);
                 $module->enabled_at = $pivot->enabled_at ?? null;
+                // No pivot row yet = never curated by a super admin = granted by default.
+                $module->is_granted = $pivot === null ? true : (bool) $pivot->is_granted;
             });
 
         return ModuleResource::collection($modules);
@@ -49,6 +51,13 @@ class ModuleController extends Controller
         }
 
         $company = $request->user()->company;
+
+        if (! $company->hasModuleGranted($module->slug)) {
+            throw ValidationException::withMessages([
+                'module' => 'This module is not included in your plan. Contact your account manager.',
+            ]);
+        }
+
         $isEnabled = $validated['is_enabled'];
 
         $company->modules()->syncWithoutDetaching([
@@ -60,6 +69,7 @@ class ModuleController extends Controller
 
         $module->is_enabled = $isEnabled;
         $module->enabled_at = $isEnabled ? now() : null;
+        $module->is_granted = true;
 
         return new ModuleResource($module);
     }

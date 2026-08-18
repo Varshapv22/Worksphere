@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\CompanyController as AdminCompanyController;
+use App\Http\Controllers\Api\Admin\CompanyModuleController as AdminCompanyModuleController;
 use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Api\Admin\PlatformStatsController;
 use App\Http\Controllers\Api\Admin\SubscriptionPlanController as AdminSubscriptionPlanController;
@@ -219,6 +220,8 @@ Route::prefix('v1')->group(function () {
         Route::patch('/companies/{company}', [AdminCompanyController::class, 'update']);
         Route::post('/companies/{company}/approve', [AdminCompanyController::class, 'approve']);
         Route::post('/companies/{company}/reject', [AdminCompanyController::class, 'reject']);
+        Route::get('/companies/{company}/modules', [AdminCompanyModuleController::class, 'index']);
+        Route::patch('/companies/{company}/modules/{module}', [AdminCompanyModuleController::class, 'update']);
 
         Route::apiResource('subscription-plans', AdminSubscriptionPlanController::class)
             ->parameters(['subscription-plans' => 'subscriptionPlan'])

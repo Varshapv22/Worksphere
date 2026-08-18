@@ -83,12 +83,24 @@ class Company extends Model
     public function modules(): BelongsToMany
     {
         return $this->belongsToMany(Module::class, 'company_module')
-            ->withPivot('is_enabled', 'enabled_at')
+            ->withPivot('is_enabled', 'enabled_at', 'is_granted')
             ->withTimestamps();
     }
 
     public function hasModuleEnabled(string $slug): bool
     {
         return $this->modules()->where('slug', $slug)->wherePivot('is_enabled', true)->exists();
+    }
+
+    /**
+     * Whether the super admin has granted this company access to a module.
+     * Absent a pivot row (never toggled or curated), a module is granted by
+     * default - grants are an opt-out restriction, not an opt-in whitelist.
+     */
+    public function hasModuleGranted(string $slug): bool
+    {
+        $pivot = $this->modules()->where('slug', $slug)->first()?->pivot;
+
+        return $pivot === null ? true : (bool) $pivot->is_granted;
     }
 }
