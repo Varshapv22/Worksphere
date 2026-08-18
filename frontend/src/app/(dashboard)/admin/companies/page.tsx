@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Ban, Check, CircleCheck, X } from "lucide-react";
+import Link from "next/link";
+import { Ban, Blocks, Check, CircleCheck, X } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
 import type { AdminCompany, Paginated } from "@/lib/types";
@@ -145,9 +146,18 @@ export default function AdminCompaniesPage() {
     { header: "Joined", accessor: (c) => formatDate(c.created_at) },
     {
       header: "Actions",
-      className: "w-48",
+      className: "w-64",
       accessor: (c) => {
         const busy = busyId === c.id;
+        const modulesLink = (
+          <Link
+            href={`/admin/companies/${c.id}/modules`}
+            className="inline-flex items-center gap-1 rounded-sm text-gray-600 transition-colors hover:text-gray-900 hover:underline dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <Blocks className="size-3.5" aria-hidden="true" />
+            Modules
+          </Link>
+        );
 
         if (c.status === "pending") {
           return (
@@ -170,47 +180,54 @@ export default function AdminCompaniesPage() {
                 <X className="size-3.5" aria-hidden="true" />
                 Reject
               </button>
+              {modulesLink}
             </div>
           );
         }
 
         if (c.status === "rejected") {
           return (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => approve(c)}
-              className="inline-flex items-center gap-1 rounded-sm text-success-700 transition-colors hover:text-success-800 hover:underline disabled:opacity-50"
-            >
-              <CircleCheck className="size-3.5" aria-hidden="true" />
-              Approve anyway
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => approve(c)}
+                className="inline-flex items-center gap-1 rounded-sm text-success-700 transition-colors hover:text-success-800 hover:underline disabled:opacity-50"
+              >
+                <CircleCheck className="size-3.5" aria-hidden="true" />
+                Approve anyway
+              </button>
+              {modulesLink}
+            </div>
           );
         }
 
         return (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => toggleActive(c)}
-            className={
-              c.is_active
-                ? "inline-flex items-center gap-1 rounded-sm text-danger-600 transition-colors hover:text-danger-700 hover:underline disabled:opacity-50"
-                : "inline-flex items-center gap-1 rounded-sm text-success-700 transition-colors hover:text-success-800 hover:underline disabled:opacity-50"
-            }
-          >
-            {c.is_active ? (
-              <>
-                <Ban className="size-3.5" aria-hidden="true" />
-                Suspend
-              </>
-            ) : (
-              <>
-                <CircleCheck className="size-3.5" aria-hidden="true" />
-                Reactivate
-              </>
-            )}
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => toggleActive(c)}
+              className={
+                c.is_active
+                  ? "inline-flex items-center gap-1 rounded-sm text-danger-600 transition-colors hover:text-danger-700 hover:underline disabled:opacity-50"
+                  : "inline-flex items-center gap-1 rounded-sm text-success-700 transition-colors hover:text-success-800 hover:underline disabled:opacity-50"
+              }
+            >
+              {c.is_active ? (
+                <>
+                  <Ban className="size-3.5" aria-hidden="true" />
+                  Suspend
+                </>
+              ) : (
+                <>
+                  <CircleCheck className="size-3.5" aria-hidden="true" />
+                  Reactivate
+                </>
+              )}
+            </button>
+            {modulesLink}
+          </div>
         );
       },
     },

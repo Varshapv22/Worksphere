@@ -193,6 +193,7 @@ export interface Module {
   is_active: boolean;
   is_available: boolean;
   is_enabled?: boolean;
+  is_granted?: boolean;
   enabled_at?: string | null;
   enabled_company_count?: number;
   created_at?: string;

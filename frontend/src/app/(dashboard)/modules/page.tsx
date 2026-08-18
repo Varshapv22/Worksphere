@@ -122,6 +122,7 @@ export default function ModulesMarketplacePage() {
                 {items.map((m) => {
                   const Icon = moduleIcon(m.icon);
                   const isEnabled = Boolean(m.is_enabled);
+                  const isGranted = m.is_granted ?? true;
                   return (
                     <Card
                       key={m.id}
@@ -146,6 +147,9 @@ export default function ModulesMarketplacePage() {
                           {!isEnabled && !m.is_available && (
                             <Badge variant="warning" dot>Coming soon</Badge>
                           )}
+                          {!isEnabled && m.is_available && !isGranted && (
+                            <Badge variant="neutral" dot>Not in your plan</Badge>
+                          )}
                         </div>
                       </div>
                       <h3 className="mt-3 text-sm font-semibold text-gray-900 dark:text-gray-100">{m.name}</h3>
@@ -154,8 +158,8 @@ export default function ModulesMarketplacePage() {
                         <Switch
                           checked={isEnabled}
                           onChange={(checked) => handleToggle(m, checked)}
-                          disabled={!m.is_available || togglingId === m.id}
-                          label={isEnabled ? "Enabled" : "Disabled"}
+                          disabled={!m.is_available || !isGranted || togglingId === m.id}
+                          label={isEnabled ? "Enabled" : !isGranted ? "Contact your admin" : "Disabled"}
                         />
                       </div>
                     </Card>
