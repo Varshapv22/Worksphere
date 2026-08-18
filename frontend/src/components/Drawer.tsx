@@ -28,13 +28,13 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
         className="fixed inset-0 bg-gray-900/50 animate-[fade-in_0.15s_ease-out]"
         onClick={onClose}
       />
-      <div className="relative flex w-64 max-w-[80vw] flex-col bg-white shadow-xl animate-[drawer-in_0.2s_ease-out]">
-        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          {title && <span className="font-semibold text-gray-900">{title}</span>}
+      <div className="relative flex w-64 max-w-[80vw] flex-col bg-white shadow-xl animate-[drawer-in_0.2s_ease-out] dark:bg-gray-800">
+        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
+          {title && <span className="font-semibold text-gray-900 dark:text-gray-100">{title}</span>}
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600"
+            className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600"
             aria-label="Close menu"
           >
             <X className="size-5" aria-hidden="true" />

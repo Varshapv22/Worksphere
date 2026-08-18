@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Bot, Loader2, Mic, MicOff, Send, User, Volume2, VolumeX } from "lucide-react";
+import { Bot, Loader2, Mic, MicOff, Send, Trash2, User, Volume2, VolumeX } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
 import { cn } from "@/lib/cn";
@@ -23,7 +23,11 @@ const SUGGESTIONS = [
   "Who is on leave today?",
   "Who is late today?",
   "Who is absent today?",
+  "How many employees are present today?",
   "Show pending leave requests",
+  "Who has upcoming leaves this week?",
+  "List all departments",
+  "How many employees do we have?",
 ];
 
 // The Web Speech API isn't part of the standard TS DOM lib — a minimal shim for the bits we use.
@@ -157,17 +161,35 @@ export default function AiAssistantPage() {
         title="AI Assistant"
         description="Ask about employees, attendance, and leave — answered live from your company data"
         actions={
-          voiceSupported ? (
-            <Button
-              type="button"
-              variant={speakEnabled ? "primary" : "secondary"}
-              size="sm"
-              onClick={() => setSpeakEnabled((v) => !v)}
-            >
-              {speakEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
-              {speakEnabled ? "Voice replies on" : "Voice replies off"}
-            </Button>
-          ) : undefined
+          <div className="flex items-center gap-2">
+            {messages.length > 0 && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setMessages([]);
+                  if (typeof window !== "undefined" && "speechSynthesis" in window) {
+                    window.speechSynthesis.cancel();
+                  }
+                }}
+              >
+                <Trash2 className="size-4" />
+                Clear chat
+              </Button>
+            )}
+            {voiceSupported && (
+              <Button
+                type="button"
+                variant={speakEnabled ? "primary" : "secondary"}
+                size="sm"
+                onClick={() => setSpeakEnabled((v) => !v)}
+              >
+                {speakEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+                {speakEnabled ? "Voice replies on" : "Voice replies off"}
+              </Button>
+            )}
+          </div>
         }
       />
 
