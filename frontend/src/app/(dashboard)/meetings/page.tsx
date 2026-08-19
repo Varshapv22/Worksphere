@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -350,6 +351,7 @@ function CreateMeetingModal({
 
 export default function MeetingsPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyMeta);
   const [page, setPage] = useState(1);
@@ -372,7 +374,8 @@ export default function MeetingsPage() {
   useEffect(() => { load(); }, [load]);
 
   async function handleDelete(id: number) {
-    if (!confirm("Delete this meeting?")) return;
+    const ok = await confirm({ title: "Delete this meeting?", variant: "danger" });
+    if (!ok) return;
     try {
       await apiFetch(`/meetings/${id}`, { method: "DELETE" });
       setMeetings((prev) => prev.filter((m) => m.id !== id));

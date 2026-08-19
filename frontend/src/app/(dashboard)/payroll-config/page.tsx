@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -187,6 +188,7 @@ function ConfigModal({
 
 export default function PayrollConfigPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [configs, setConfigs] = useState<PayrollConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [editTarget, setEditTarget] = useState<PayrollConfig | null>(null);
@@ -207,7 +209,8 @@ export default function PayrollConfigPage() {
   useEffect(() => { load(); }, [load]);
 
   async function handleDelete(id: number) {
-    if (!confirm("Remove this payroll configuration?")) return;
+    const ok = await confirm({ title: "Remove this payroll configuration?", variant: "danger" });
+    if (!ok) return;
     try {
       await apiFetch(`/payroll-configs/${id}`, { method: "DELETE" });
       setConfigs((prev) => prev.filter((c) => c.id !== id));

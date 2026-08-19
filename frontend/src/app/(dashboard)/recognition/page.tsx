@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -322,6 +323,7 @@ function AwardModal({
 
 export default function RecognitionPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [recognitions, setRecognitions] = useState<Recognition[]>([]);
   const [badges, setBadges] = useState<RecognitionBadge[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyMeta);
@@ -350,7 +352,8 @@ export default function RecognitionPage() {
   useEffect(() => { loadData(); }, [loadData]);
 
   async function handleDelete(id: number) {
-    if (!confirm("Remove this recognition?")) return;
+    const ok = await confirm({ title: "Remove this recognition?", variant: "danger" });
+    if (!ok) return;
     setDeleting(id);
     try {
       await apiFetch(`/recognitions/${id}`, { method: "DELETE" });

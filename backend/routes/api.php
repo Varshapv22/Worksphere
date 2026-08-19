@@ -45,6 +45,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me', [AuthController::class, 'me']);
+        Route::patch('/auth/me', [AuthController::class, 'updateProfile']);
 
         Route::get('/company', [CompanyController::class, 'show']);
         Route::put('/company', [CompanyController::class, 'update']);
@@ -221,6 +222,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/companies/{company}/approve', [AdminCompanyController::class, 'approve']);
         Route::post('/companies/{company}/reject', [AdminCompanyController::class, 'reject']);
         Route::get('/companies/{company}/modules', [AdminCompanyModuleController::class, 'index']);
+        Route::post('/companies/{company}/modules/reorder', [AdminCompanyModuleController::class, 'reorder']);
         Route::patch('/companies/{company}/modules/{module}', [AdminCompanyModuleController::class, 'update']);
 
         Route::apiResource('subscription-plans', AdminSubscriptionPlanController::class)

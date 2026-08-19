@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -399,6 +400,7 @@ function EnrollModal({
 
 export default function CareerPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [tracks, setTracks] = useState<CareerTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -419,7 +421,8 @@ export default function CareerPage() {
   useEffect(() => { load(); }, [load]);
 
   async function handleDelete(id: number) {
-    if (!confirm("Delete this career track?")) return;
+    const ok = await confirm({ title: "Delete this career track?", variant: "danger" });
+    if (!ok) return;
     try {
       await apiFetch(`/career-tracks/${id}`, { method: "DELETE" });
       setTracks((prev) => prev.filter((t) => t.id !== id));

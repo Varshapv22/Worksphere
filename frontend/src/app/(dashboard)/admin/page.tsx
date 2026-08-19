@@ -110,7 +110,7 @@ export default function PlatformDashboardPage() {
             </div>
             <div className="flex items-center justify-between border-t border-gray-100 pt-3">
               <dt className="text-gray-600">Annual run rate</dt>
-              <dd className="font-semibold text-gray-900">
+              <dd className="font-semibold text-gray-900 dark:text-gray-100">
                 {stats ? currency(stats.revenue.arr) : "—"}
               </dd>
             </div>
@@ -132,7 +132,7 @@ export default function PlatformDashboardPage() {
                 <li key={c.id} className="flex items-center justify-between gap-3 py-3 text-sm">
                   <div className="flex items-center gap-2">
                     <TriangleAlert className="size-4 shrink-0 text-warning-600" aria-hidden="true" />
-                    <span className="font-medium text-gray-900">{c.name}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{c.name}</span>
                   </div>
                   <span className="text-gray-600">
                     {c.employee_count} / {c.max_employees} employees ·{" "}

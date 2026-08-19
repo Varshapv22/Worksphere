@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -267,6 +268,7 @@ function AssetModal({
 
 export default function AssetsPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyMeta);
   const [stats, setStats] = useState<Record<string, number>>({});
@@ -303,7 +305,8 @@ export default function AssetsPage() {
   useEffect(() => { load(); }, [load]);
 
   async function handleDelete(id: number) {
-    if (!confirm("Delete this asset?")) return;
+    const ok = await confirm({ title: "Delete this asset?", variant: "danger" });
+    if (!ok) return;
     try {
       await apiFetch(`/assets/${id}`, { method: "DELETE" });
       setAssets((prev) => prev.filter((a) => a.id !== id));

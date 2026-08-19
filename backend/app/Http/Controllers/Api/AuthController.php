@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 
 class AuthController extends Controller
@@ -139,5 +140,41 @@ class AuthController extends Controller
             'roles' => $user->getRoleNames(),
             'permissions' => $user->getAllPermissions()->pluck('name'),
         ]);
+    }
+
+    /**
+     * Update the authenticated user's own name/email, and optionally their
+     * password (requires the current password to confirm identity).
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => ['sometimes', 'string', 'max:255'],
+            'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'current_password' => ['required_with:new_password', 'string'],
+            'new_password' => ['sometimes', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        if (isset($validated['new_password'])) {
+            if (! Hash::check($validated['current_password'], $user->password)) {
+                throw ValidationException::withMessages([
+                    'current_password' => 'The current password is incorrect.',
+                ]);
+            }
+            $user->password = Hash::make($validated['new_password']);
+        }
+
+        if (isset($validated['name'])) {
+            $user->name = $validated['name'];
+        }
+        if (isset($validated['email'])) {
+            $user->email = $validated['email'];
+        }
+
+        $user->save();
+
+        return response()->json(['user' => $user->fresh()->load('company')]);
     }
 }

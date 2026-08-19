@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { GitBranch, Plus, Search, Users } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
 import type { Department, Designation, Employee, Paginated, PaginationMeta } from "@/lib/types";
@@ -15,6 +15,12 @@ import { Pagination } from "@/components/Pagination";
 import { PageHeader } from "@/components/PageHeader";
 import { Modal } from "@/components/Modal";
 import { Badge } from "@/components/Badge";
+import { ViewToggle } from "@/components/ViewToggle";
+
+const EMPLOYEE_VIEWS = [
+  { href: "/employees", label: "List", icon: Users },
+  { href: "/org-chart", label: "Org Chart", icon: GitBranch },
+];
 
 const emptyMeta: PaginationMeta = { current_page: 1, last_page: 1, total: 0 };
 
@@ -93,10 +99,13 @@ export default function EmployeesPage() {
         title="Employees"
         description="Manage your organization's workforce"
         actions={
-          <Button onClick={() => setModalOpen(true)}>
-            <Plus className="size-4" aria-hidden="true" />
-            Add employee
-          </Button>
+          <>
+            <ViewToggle items={EMPLOYEE_VIEWS} />
+            <Button onClick={() => setModalOpen(true)}>
+              <Plus className="size-4" aria-hidden="true" />
+              Add employee
+            </Button>
+          </>
         }
       />
 

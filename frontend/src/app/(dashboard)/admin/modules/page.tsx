@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import type { Module } from "@/lib/types";
 import { moduleIcon } from "@/lib/moduleIcons";
 import { Card } from "@/components/Card";
@@ -18,6 +19,7 @@ import { PageHeader } from "@/components/PageHeader";
 
 export default function AdminModulesPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,8 @@ export default function AdminModulesPage() {
   }, [load]);
 
   async function handleDelete(module: Module) {
-    if (!confirm(`Delete the "${module.name}" module?`)) return;
+    const ok = await confirm({ title: `Delete the "${module.name}" module?`, variant: "danger" });
+    if (!ok) return;
     try {
       await apiFetch(`/admin/modules/${module.id}`, { method: "DELETE" });
       toast.success("Module deleted.");
@@ -63,7 +66,7 @@ export default function AdminModulesPage() {
               <Icon className="size-4" aria-hidden="true" />
             </span>
             <div>
-              <div className="font-medium text-gray-900">{m.name}</div>
+              <div className="font-medium text-gray-900 dark:text-gray-100">{m.name}</div>
               <div className="text-xs text-gray-400">{m.slug}</div>
             </div>
           </div>

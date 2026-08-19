@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Check, ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Gift, ListChecks, Plus, Trash2, X } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/lib/toast";
@@ -16,7 +16,10 @@ import { Modal } from "@/components/Modal";
 import { Table, type Column } from "@/components/Table";
 import { Badge } from "@/components/Badge";
 import { PageHeader } from "@/components/PageHeader";
+import { Tabs } from "@/components/Tabs";
 import { cn } from "@/lib/cn";
+
+type LeaveTab = "calendar" | "holidays" | "requests";
 
 function badgeVariant(status: LeaveStatus) {
   if (status === "approved") return "success" as const;
@@ -232,6 +235,7 @@ function RequestLeaveModal({
 
 export default function LeavePage() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<LeaveTab>("calendar");
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
@@ -312,6 +316,7 @@ export default function LeavePage() {
 
   const monthGrid = useMemo(() => buildMonthGrid(viewDate), [viewDate]);
   const todayIso = useMemo(() => toISODate(new Date()), []);
+  const pendingCount = useMemo(() => requests.filter((r) => r.status === "pending").length, [requests]);
 
   async function handleApprove(id: number) {
     try {
@@ -381,10 +386,10 @@ export default function LeavePage() {
       header: "Actions",
       accessor: (r) =>
         r.status === "pending" && r.employee_id !== user?.id ? (
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               type="button"
-              className="inline-flex items-center gap-1 rounded-sm text-success-700 transition-colors hover:text-green-800 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success-600"
+              className="inline-flex items-center gap-1 rounded-md border border-success-200 bg-success-50 px-2.5 py-1.5 text-xs font-semibold text-success-700 transition-colors hover:bg-success-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success-600 dark:border-success-900/40 dark:bg-success-900/20 dark:text-success-400 dark:hover:bg-success-900/30"
               onClick={() => handleApprove(r.id)}
             >
               <Check className="size-3.5" aria-hidden="true" />
@@ -392,7 +397,7 @@ export default function LeavePage() {
             </button>
             <button
               type="button"
-              className="inline-flex items-center gap-1 rounded-sm text-danger-600 transition-colors hover:text-danger-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger-600"
+              className="inline-flex items-center gap-1 rounded-md border border-danger-200 bg-danger-50 px-2.5 py-1.5 text-xs font-semibold text-danger-700 transition-colors hover:bg-danger-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger-600 dark:border-danger-900/40 dark:bg-danger-900/20 dark:text-danger-400 dark:hover:bg-danger-900/30"
               onClick={() => handleReject(r.id)}
             >
               <X className="size-3.5" aria-hidden="true" />
@@ -407,8 +412,23 @@ export default function LeavePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title="Leave" description="Request time off and review your team's requests" />
+      <PageHeader
+        title="Leave"
+        description="Request time off and review your team's requests"
+        actions={
+          <Tabs
+            active={activeTab}
+            onChange={(key) => setActiveTab(key as LeaveTab)}
+            items={[
+              { key: "calendar", label: "Calendar", icon: CalendarDays },
+              { key: "holidays", label: "Company Holidays", icon: Gift, badge: holidays.length },
+              { key: "requests", label: "Requests", icon: ListChecks, badge: pendingCount },
+            ]}
+          />
+        }
+      />
 
+      {activeTab === "calendar" && (
       <Card
         title={viewDate.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
         description="Click any day to request leave"
@@ -464,8 +484,7 @@ export default function LeavePage() {
                   onClick={() => setModalDate(iso)}
                   className={cn(
                     "flex min-h-24 flex-col items-start gap-1 bg-white p-1.5 text-left transition-colors hover:bg-brand-50 dark:bg-gray-800 dark:hover:bg-brand-900/20",
-                    !inMonth && "bg-gray-50 dark:bg-gray-800/50",
-                    holiday && "bg-info-50/60 dark:bg-blue-900/10"
+                    !inMonth && "bg-gray-50 dark:bg-gray-800/50"
                   )}
                 >
                   <span
@@ -483,7 +502,7 @@ export default function LeavePage() {
                   <div className="flex w-full flex-col gap-0.5">
                     {holiday && (
                       <span title={holiday.name}>
-                        <Badge variant="info" className="w-full !inline-flex truncate">
+                        <Badge variant="danger" className="w-full !inline-flex truncate">
                           {holiday.name}
                         </Badge>
                       </span>
@@ -513,11 +532,13 @@ export default function LeavePage() {
             <span className="size-2 rounded-full bg-warning-600" aria-hidden="true" /> Pending
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-info-600" aria-hidden="true" /> Holiday
+            <span className="size-2 rounded-full bg-danger-600" aria-hidden="true" /> Holiday
           </span>
         </div>
       </Card>
+      )}
 
+      {activeTab === "holidays" && (
       <Card title="Company Holidays" description="Non-working days visible to everyone on the calendar above">
         <form onSubmit={handleAddHoliday} className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
@@ -566,6 +587,7 @@ export default function LeavePage() {
           </ul>
         )}
       </Card>
+      )}
 
       <RequestLeaveModal
         open={modalDate !== null}
@@ -578,6 +600,7 @@ export default function LeavePage() {
         }}
       />
 
+      {activeTab === "requests" && (
       <Card title="Requests">
         <div className="mb-4 sm:w-56">
           <Select
@@ -601,6 +624,7 @@ export default function LeavePage() {
           emptyMessage="No leave requests found."
         />
       </Card>
+      )}
     </div>
   );
 }

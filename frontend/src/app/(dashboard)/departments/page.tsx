@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import type { Department, Paginated } from "@/lib/types";
 import { Card } from "@/components/Card";
 import { Input } from "@/components/Input";
@@ -14,6 +15,7 @@ import { PageHeader } from "@/components/PageHeader";
 
 export default function DepartmentsPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,8 @@ export default function DepartmentsPage() {
   }, [load]);
 
   async function handleDelete(id: number) {
-    if (!confirm("Delete this department?")) return;
+    const ok = await confirm({ title: "Delete this department?", variant: "danger" });
+    if (!ok) return;
     try {
       await apiFetch(`/departments/${id}`, { method: "DELETE" });
       toast.success("Department deleted.");
@@ -49,7 +52,7 @@ export default function DepartmentsPage() {
   }
 
   const columns: Column<Department>[] = [
-    { header: "Name", accessor: (d) => <span className="font-medium text-gray-900">{d.name}</span> },
+    { header: "Name", accessor: (d) => <span className="font-medium text-gray-900 dark:text-gray-100">{d.name}</span> },
     { header: "Description", accessor: (d) => d.description ?? "—" },
     {
       header: "Actions",

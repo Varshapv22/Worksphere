@@ -26,17 +26,17 @@ export function Breadcrumb() {
   const homeHref = pathname.startsWith("/admin") ? "/admin" : "/dashboard";
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-gray-500">
-      <Link href={homeHref} className="transition-colors hover:text-gray-700">
+    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+      <Link href={homeHref} className="transition-colors hover:text-gray-700 dark:hover:text-gray-200">
         Home
       </Link>
       {crumbs.map((crumb, i) => (
         <span key={crumb.href} className="flex items-center gap-1.5">
-          <ChevronRight className="size-3.5 text-gray-300" aria-hidden="true" />
+          <ChevronRight className="size-3.5 text-gray-300 dark:text-gray-600" aria-hidden="true" />
           {i === crumbs.length - 1 ? (
-            <span className="font-medium text-gray-900">{crumb.label}</span>
+            <span className="font-medium text-gray-900 dark:text-gray-100">{crumb.label}</span>
           ) : (
-            <Link href={crumb.href} className="transition-colors hover:text-gray-700">
+            <Link href={crumb.href} className="transition-colors hover:text-gray-700 dark:hover:text-gray-200">
               {crumb.label}
             </Link>
           )}

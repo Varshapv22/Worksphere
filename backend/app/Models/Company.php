@@ -83,7 +83,7 @@ class Company extends Model
     public function modules(): BelongsToMany
     {
         return $this->belongsToMany(Module::class, 'company_module')
-            ->withPivot('is_enabled', 'enabled_at', 'is_granted')
+            ->withPivot('is_enabled', 'enabled_at', 'is_granted', 'sort_order')
             ->withTimestamps();
     }
 

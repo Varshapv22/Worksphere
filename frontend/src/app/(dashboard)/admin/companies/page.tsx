@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Ban, Blocks, Check, CircleCheck, X } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import type { AdminCompany, Paginated } from "@/lib/types";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
@@ -18,6 +19,7 @@ function formatDate(iso: string | null) {
 
 export default function AdminCompaniesPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [companies, setCompanies] = useState<AdminCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,13 +43,31 @@ export default function AdminCompaniesPage() {
   }, [load]);
 
   async function toggleActive(company: AdminCompany) {
+    const suspending = company.is_active;
+    const ok = await confirm(
+      suspending
+        ? {
+            title: `Suspend ${company.name}?`,
+            description: "Their users won't be able to sign in until you reactivate them.",
+            confirmLabel: "Suspend",
+            variant: "danger",
+          }
+        : {
+            title: `Reactivate ${company.name}?`,
+            description: "Their users will be able to sign in again immediately.",
+            confirmLabel: "Reactivate",
+            variant: "primary",
+          }
+    );
+    if (!ok) return;
+
     setBusyId(company.id);
     try {
       await apiFetch(`/admin/companies/${company.id}`, {
         method: "PATCH",
         body: JSON.stringify({ is_active: !company.is_active }),
       });
-      toast.success(company.is_active ? "Company suspended." : "Company reactivated.");
+      toast.success(suspending ? "Company suspended." : "Company reactivated.");
       load();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Failed to update company.");
@@ -57,6 +77,14 @@ export default function AdminCompaniesPage() {
   }
 
   async function approve(company: AdminCompany) {
+    const ok = await confirm({
+      title: `Approve ${company.name}?`,
+      description: "Their admin will be able to sign in and start using WorkSphere.",
+      confirmLabel: "Approve",
+      variant: "primary",
+    });
+    if (!ok) return;
+
     setBusyId(company.id);
     try {
       await apiFetch(`/admin/companies/${company.id}/approve`, { method: "POST" });
@@ -70,7 +98,14 @@ export default function AdminCompaniesPage() {
   }
 
   async function reject(company: AdminCompany) {
-    if (!confirm(`Reject ${company.name}'s registration? They will not be able to sign in.`)) return;
+    const ok = await confirm({
+      title: `Reject ${company.name}'s registration?`,
+      description: "They will not be able to sign in.",
+      confirmLabel: "Reject",
+      variant: "danger",
+    });
+    if (!ok) return;
+
     setBusyId(company.id);
     try {
       await apiFetch(`/admin/companies/${company.id}/reject`, { method: "POST" });
@@ -87,10 +122,12 @@ export default function AdminCompaniesPage() {
     {
       header: "Company",
       accessor: (c) => (
-        <div>
-          <p className="font-medium text-gray-900">{c.name}</p>
-          <p className="text-xs text-gray-500">{c.email}</p>
-        </div>
+        <Link href={`/admin/companies/${c.id}/modules`} className="group inline-block">
+          <p className="font-medium text-gray-900 group-hover:text-brand-700 group-hover:underline dark:text-gray-100 dark:group-hover:text-brand-400">
+            {c.name}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{c.email}</p>
+        </Link>
       ),
     },
     {

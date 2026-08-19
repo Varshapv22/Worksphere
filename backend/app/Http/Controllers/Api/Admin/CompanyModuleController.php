@@ -7,11 +7,14 @@ use App\Http\Resources\Admin\AdminCompanyModuleResource;
 use App\Models\Company;
 use App\Models\Module;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CompanyModuleController extends Controller
 {
     /**
-     * The full catalog with this company's grant/enabled state for each module.
+     * The full catalog with this company's grant/enabled state for each
+     * module, ordered by this company's custom order where one has been
+     * set, falling back to the platform-wide catalog order.
      */
     public function index(Company $company)
     {
@@ -25,7 +28,13 @@ class CompanyModuleController extends Controller
                 $pivot = $pivotByModuleId->get($module->id)?->pivot;
                 $module->is_enabled = (bool) ($pivot->is_enabled ?? false);
                 $module->is_granted = $pivot === null ? true : (bool) $pivot->is_granted;
-            });
+                $module->company_sort_order = $pivot->sort_order ?? null;
+            })
+            ->sortBy([
+                fn (Module $a, Module $b) => ($a->company_sort_order ?? $a->sort_order) <=> ($b->company_sort_order ?? $b->sort_order),
+                fn (Module $a, Module $b) => $a->name <=> $b->name,
+            ])
+            ->values();
 
         return AdminCompanyModuleResource::collection($modules);
     }
@@ -55,5 +64,26 @@ class CompanyModuleController extends Controller
         $module->is_granted = $isGranted;
 
         return new AdminCompanyModuleResource($module);
+    }
+
+    /**
+     * Persist this company's custom display order for a set of modules
+     * (e.g. the modules currently active in their Kanban lane), in the
+     * order given.
+     */
+    public function reorder(Request $request, Company $company)
+    {
+        $validated = $request->validate([
+            'module_ids' => ['required', 'array', 'min:1'],
+            'module_ids.*' => ['integer', Rule::exists('modules', 'id')],
+        ]);
+
+        foreach (array_values($validated['module_ids']) as $index => $moduleId) {
+            $company->modules()->syncWithoutDetaching([
+                $moduleId => ['sort_order' => $index],
+            ]);
+        }
+
+        return response()->noContent();
     }
 }

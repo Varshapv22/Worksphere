@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -324,6 +325,7 @@ function CreateWebhookModal({
 
 export default function DeveloperPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookType[]>([]);
   const [availableEvents, setAvailableEvents] = useState<string[]>([]);
@@ -354,7 +356,13 @@ export default function DeveloperPage() {
   useEffect(() => { load(); }, [load]);
 
   async function handleRevokeKey(id: number) {
-    if (!confirm("Revoke this API key? Apps using it will lose access.")) return;
+    const ok = await confirm({
+      title: "Revoke this API key?",
+      description: "Apps using it will lose access.",
+      confirmLabel: "Revoke",
+      variant: "danger",
+    });
+    if (!ok) return;
     try {
       await apiFetch(`/developer/keys/${id}`, { method: "DELETE" });
       setApiKeys((prev) => prev.filter((k) => k.id !== id));
@@ -365,7 +373,8 @@ export default function DeveloperPage() {
   }
 
   async function handleDeleteWebhook(id: number) {
-    if (!confirm("Delete this webhook?")) return;
+    const ok = await confirm({ title: "Delete this webhook?", variant: "danger" });
+    if (!ok) return;
     try {
       await apiFetch(`/developer/webhooks/${id}`, { method: "DELETE" });
       setWebhooks((prev) => prev.filter((w) => w.id !== id));

@@ -24,6 +24,14 @@ interface MeResponse {
   user: User;
 }
 
+interface UpdateProfilePayload {
+  name?: string;
+  email?: string;
+  current_password?: string;
+  new_password?: string;
+  new_password_confirmation?: string;
+}
+
 interface LoginResponse {
   user: User;
   token: string;
@@ -41,6 +49,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   registerCompany: (payload: RegisterCompanyPayload) => Promise<RegisterCompanyResponse>;
+  updateProfile: (payload: UpdateProfilePayload) => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -112,6 +121,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const updateProfile = useCallback(async (payload: UpdateProfilePayload) => {
+    const res = await apiFetch<MeResponse>("/auth/me", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    setUser(res.user);
+    setCompany(res.user.company ?? null);
+    return res.user;
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await apiFetch("/auth/logout", { method: "POST" });
@@ -125,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, company, loading, login, logout, registerCompany }}
+      value={{ user, company, loading, login, logout, registerCompany, updateProfile }}
     >
       {children}
     </AuthContext.Provider>

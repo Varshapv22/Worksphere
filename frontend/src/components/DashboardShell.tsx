@@ -18,7 +18,6 @@ import {
   CreditCard,
   FileSearch,
   Gauge,
-  GitBranch,
   Globe,
   LayoutDashboard,
   LineChart,
@@ -39,13 +38,13 @@ import { ModulesContext } from "@/lib/modulesContext";
 import { Drawer } from "@/components/Drawer";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { UserMenu } from "@/components/UserMenu";
 import { cn } from "@/lib/cn";
 
 const tenantNavItems = [
   { href: "/dashboard",         label: "Dashboard",         icon: LayoutDashboard },
   { href: "/advisor",           label: "AI Advisor",        icon: Sparkles },
   { href: "/employees",         label: "Employees",         icon: Users },
-  { href: "/org-chart",         label: "Org Chart",         icon: GitBranch },
   { href: "/departments",       label: "Departments",       icon: Network },
   { href: "/attendance",        label: "Attendance",        icon: Clock },
   { href: "/leave",             label: "Leave",             icon: CalendarDays },
@@ -107,7 +106,10 @@ function NavLinks({
         const active =
           item.href === "/admin"
             ? pathname === item.href
-            : pathname.startsWith(item.href);
+            : pathname.startsWith(item.href) ||
+              // Org Chart is a distinct route reached via the toggle inside
+              // the Employees page, but shares this one sidebar entry.
+              (item.href === "/employees" && pathname.startsWith("/org-chart"));
         return (
           <Link
             key={item.href}
@@ -128,15 +130,6 @@ function NavLinks({
       })}
     </nav>
   );
-}
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 }
 
 export function DashboardShell({ children }: { children: ReactNode }) {
@@ -260,12 +253,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             {/* Theme toggle */}
             <ThemeToggle />
 
-            <span className="hidden text-sm text-gray-600 dark:text-gray-400 sm:inline">
-              {user.name}
-            </span>
-            <span className="flex size-8 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
-              {initials(user.name)}
-            </span>
+            <UserMenu />
           </div>
         </header>
 

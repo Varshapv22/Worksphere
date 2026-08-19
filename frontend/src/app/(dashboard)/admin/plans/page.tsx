@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import type { SubscriptionPlan } from "@/lib/types";
 import { Card } from "@/components/Card";
 import { Input } from "@/components/Input";
@@ -23,6 +24,7 @@ function featureSummary(features: SubscriptionPlan["features"]) {
 
 export default function AdminPlansPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,8 @@ export default function AdminPlansPage() {
   }, [load]);
 
   async function handleDelete(plan: SubscriptionPlan) {
-    if (!confirm(`Delete the "${plan.name}" plan?`)) return;
+    const ok = await confirm({ title: `Delete the "${plan.name}" plan?`, variant: "danger" });
+    if (!ok) return;
     try {
       await apiFetch(`/admin/subscription-plans/${plan.id}`, { method: "DELETE" });
       toast.success("Plan deleted.");
@@ -58,7 +61,7 @@ export default function AdminPlansPage() {
   }
 
   const columns: Column<SubscriptionPlan>[] = [
-    { header: "Name", accessor: (p) => <span className="font-medium text-gray-900">{p.name}</span> },
+    { header: "Name", accessor: (p) => <span className="font-medium text-gray-900 dark:text-gray-100">{p.name}</span> },
     { header: "Price", accessor: (p) => `$${p.price_monthly}/mo` },
     { header: "Employee cap", accessor: (p) => p.max_employees },
     { header: "Features", accessor: (p) => featureSummary(p.features) },

@@ -234,7 +234,7 @@ function SkillSearchPanel({ matrix }: { matrix: SkillMatrix | null }) {
     <Card>
       <div className="mb-3 flex items-center gap-2">
         <Search className="size-4 text-brand-500" />
-        <h3 className="font-semibold text-gray-900">Find experts by skill</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100">Find experts by skill</h3>
       </div>
       <div className="flex flex-wrap gap-3">
         <div className="w-56">
@@ -280,7 +280,7 @@ function SkillSearchPanel({ matrix }: { matrix: SkillMatrix | null }) {
                     {e.full_name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{e.full_name}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{e.full_name}</p>
                     {e.department && (
                       <p className="text-xs text-gray-400">{e.department}</p>
                     )}
@@ -400,7 +400,7 @@ function MatrixTable({
                       {emp.full_name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
                     </span>
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-gray-900">{emp.full_name}</p>
+                      <p className="truncate font-medium text-gray-900 dark:text-gray-100">{emp.full_name}</p>
                       {emp.department && (
                         <p className="truncate text-xs text-gray-400">{emp.department}</p>
                       )}
@@ -587,7 +587,7 @@ export default function SkillsPage() {
               <Icon className="size-4" />
             </span>
             <div>
-              <p className="text-xl font-bold text-gray-900">{loading ? "…" : value}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{loading ? "…" : value}</p>
               <p className="text-xs text-gray-500">{label}</p>
             </div>
           </div>

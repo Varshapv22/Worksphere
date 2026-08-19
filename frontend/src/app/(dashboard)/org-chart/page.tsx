@@ -17,7 +17,13 @@ import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
+import { ViewToggle } from "@/components/ViewToggle";
 import type { OrgNode } from "@/lib/types";
+
+const EMPLOYEE_VIEWS = [
+  { href: "/employees", label: "List", icon: Users },
+  { href: "/org-chart", label: "Org Chart", icon: GitBranch },
+];
 
 // ─── Tree helpers ─────────────────────────────────────────────────────────────
 
@@ -418,6 +424,7 @@ export default function OrgChartPage() {
               Saving…
             </span>
           )}
+          <ViewToggle items={EMPLOYEE_VIEWS} />
           <Button
             variant="secondary"
             size="sm"

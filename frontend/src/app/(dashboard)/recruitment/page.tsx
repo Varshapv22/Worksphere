@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { apiFetch, ApiError, API_URL, getToken } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import type { ParsedResume, Paginated, PaginationMeta } from "@/lib/types";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
@@ -73,7 +74,7 @@ function Section({
         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
           {icon}
         </span>
-        <span className="flex-1 font-semibold text-gray-900">{title}</span>
+        <span className="flex-1 font-semibold text-gray-900 dark:text-gray-100">{title}</span>
         {count !== undefined && (
           <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700">
             {count}
@@ -102,10 +103,12 @@ function ResumeDetailPanel({
   onDeleted: () => void;
 }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [deleting, setDeleting] = useState(false);
 
   async function handleDelete() {
-    if (!confirm("Delete this parsed resume?")) return;
+    const ok = await confirm({ title: "Delete this parsed resume?", variant: "danger" });
+    if (!ok) return;
     setDeleting(true);
     try {
       await apiFetch(`/resumes/${resume.id}`, { method: "DELETE" });
@@ -123,7 +126,7 @@ function ResumeDetailPanel({
       <div className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">{resume.file_name}</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{resume.file_name}</h2>
             <p className="text-sm text-gray-500">Uploaded {formatDate(resume.created_at)}</p>
           </div>
           <div className="flex gap-2">
@@ -158,7 +161,7 @@ function ResumeDetailPanel({
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">{resume.candidate_name ?? "Unknown Candidate"}</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{resume.candidate_name ?? "Unknown Candidate"}</h2>
           <p className="mt-0.5 text-sm text-gray-500">{resume.file_name} · Parsed {formatDate(resume.created_at)}</p>
         </div>
         <div className="flex shrink-0 gap-2">
@@ -232,7 +235,7 @@ function ResumeDetailPanel({
                   <span className="absolute left-[3px] top-4 bottom-0 w-px bg-gray-200" />
                 )}
                 <div className="flex flex-wrap items-center justify-between gap-1">
-                  <span className="font-semibold text-gray-900">{exp.title}</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{exp.title}</span>
                   {exp.duration && (
                     <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{exp.duration}</span>
                   )}
@@ -257,7 +260,7 @@ function ResumeDetailPanel({
                   <BookOpen className="size-4" />
                 </span>
                 <div>
-                  <p className="font-semibold text-gray-900">{edu.degree}</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">{edu.degree}</p>
                   <p className="text-sm text-gray-600">{edu.institution}</p>
                   {(edu.year || edu.gpa) && (
                     <div className="mt-1 flex gap-2">
@@ -278,7 +281,7 @@ function ResumeDetailPanel({
           <div className="flex flex-col gap-3">
             {resume.projects.map((project, i) => (
               <div key={i} className="rounded-lg border border-gray-100 p-3">
-                <p className="font-semibold text-gray-900">{project.name}</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">{project.name}</p>
                 {project.description && (
                   <p className="mt-1 text-sm text-gray-600 leading-relaxed">{project.description}</p>
                 )}
@@ -412,7 +415,7 @@ function UploadZone({ onParsed }: { onParsed: (resume: ParsedResume) => void }) 
             <Loader2 className="size-8 animate-spin text-brand-600" />
           </div>
           <div>
-            <p className="font-semibold text-gray-900">AI is parsing your resume…</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100">AI is parsing your resume…</p>
             <p className="mt-1 text-sm text-gray-500">{progress}</p>
           </div>
           <div className="flex gap-2">
@@ -430,7 +433,7 @@ function UploadZone({ onParsed }: { onParsed: (resume: ParsedResume) => void }) 
             <Upload className={cn("size-7 transition-colors", dragging ? "text-brand-600" : "text-gray-400 group-hover:text-brand-500")} />
           </div>
           <div>
-            <p className="font-semibold text-gray-900">Drop your PDF resume here</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100">Drop your PDF resume here</p>
             <p className="mt-1 text-sm text-gray-500">
               or{" "}
               <span className="text-brand-600 underline underline-offset-2">browse files</span>
@@ -484,7 +487,7 @@ function ResumeRow({
         <Icon className={cn("size-4", statusConfig.color)} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-gray-900">
+        <p className="truncate font-medium text-gray-900 dark:text-gray-100">
           {resume.candidate_name ?? resume.file_name}
         </p>
         <p className="truncate text-xs text-gray-500">
@@ -563,7 +566,7 @@ export default function RecruitmentPage() {
               <FileSearch className="size-8 text-brand-500" />
             </span>
             <div>
-              <p className="text-lg font-semibold text-gray-900">No resumes parsed yet</p>
+              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">No resumes parsed yet</p>
               <p className="mt-1 text-sm text-gray-500">
                 Upload a PDF and AI will extract the candidate&apos;s name, skills, experience, education, and more.
               </p>
@@ -582,7 +585,7 @@ export default function RecruitmentPage() {
           {/* Left: list */}
           <Card className="h-fit">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Parsed Resumes</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Parsed Resumes</h3>
               <span className="text-xs text-gray-400">{meta.total} total</span>
             </div>
 
@@ -662,7 +665,7 @@ export default function RecruitmentPage() {
                 <Icon className="size-4 text-brand-600" />
               </span>
               <div>
-                <p className="font-semibold text-gray-900">{label}</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">{label}</p>
                 <p className="mt-0.5 text-xs text-gray-500">{desc}</p>
               </div>
             </div>

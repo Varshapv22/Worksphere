@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/lib/toast";
+import { ConfirmProvider } from "@/lib/confirm";
 import { ThemeProvider } from "@/lib/theme";
 import "./globals.css";
 
@@ -43,7 +44,9 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <ConfirmProvider>{children}</ConfirmProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

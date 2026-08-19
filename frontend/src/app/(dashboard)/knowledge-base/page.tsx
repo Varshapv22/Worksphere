@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
@@ -257,6 +258,7 @@ function ArticleFormModal({
 
 export default function KnowledgeBasePage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [articles, setArticles] = useState<KbArticle[]>([]);
   const [categories, setCategories] = useState<KbCategory[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyMeta);
@@ -309,7 +311,8 @@ export default function KnowledgeBasePage() {
   }
 
   async function handleDelete(article: KbArticle) {
-    if (!confirm(`Delete "${article.title}"?`)) return;
+    const ok = await confirm({ title: `Delete "${article.title}"?`, variant: "danger" });
+    if (!ok) return;
     setDeleting(article.id);
     try {
       await apiFetch(`/knowledge-base/${article.id}`, { method: "DELETE" });

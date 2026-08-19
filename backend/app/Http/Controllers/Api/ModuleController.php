@@ -30,7 +30,15 @@ class ModuleController extends Controller
                 $module->enabled_at = $pivot->enabled_at ?? null;
                 // No pivot row yet = never curated by a super admin = granted by default.
                 $module->is_granted = $pivot === null ? true : (bool) $pivot->is_granted;
-            });
+                $module->company_sort_order = $pivot->sort_order ?? null;
+            })
+            // The super admin's custom order for this company (set by dragging
+            // in the Kanban board) wins over the platform-wide catalog order.
+            ->sortBy([
+                fn (Module $a, Module $b) => ($a->company_sort_order ?? $a->sort_order) <=> ($b->company_sort_order ?? $b->sort_order),
+                fn (Module $a, Module $b) => $a->name <=> $b->name,
+            ])
+            ->values();
 
         return ModuleResource::collection($modules);
     }

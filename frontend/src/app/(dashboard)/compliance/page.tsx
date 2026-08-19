@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -224,6 +225,7 @@ function ComplianceModal({
 
 export default function CompliancePage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [items, setItems] = useState<ComplianceItem[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyMeta);
   const [summary, setSummary] = useState<Record<string, number>>({});
@@ -258,7 +260,8 @@ export default function CompliancePage() {
   useEffect(() => { load(); }, [load]);
 
   async function handleDelete(id: number) {
-    if (!confirm("Delete this compliance item?")) return;
+    const ok = await confirm({ title: "Delete this compliance item?", variant: "danger" });
+    if (!ok) return;
     try {
       await apiFetch(`/compliance/${id}`, { method: "DELETE" });
       setItems((prev) => prev.filter((i) => i.id !== id));

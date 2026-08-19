@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import type {
   Department,
   Designation,
@@ -1051,6 +1052,7 @@ export default function EmployeeProfilePage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const toast = useToast();
+  const confirm = useConfirm();
   const id = params.id;
 
   const [data, setData] = useState<Employee360 | null>(null);
@@ -1066,7 +1068,12 @@ export default function EmployeeProfilePage() {
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleDelete() {
-    if (!confirm("Delete this employee? This cannot be undone.")) return;
+    const ok = await confirm({
+      title: "Delete this employee?",
+      description: "This cannot be undone.",
+      variant: "danger",
+    });
+    if (!ok) return;
     try {
       await apiFetch(`/employees/${id}`, { method: "DELETE" });
       toast.success("Employee deleted.");
