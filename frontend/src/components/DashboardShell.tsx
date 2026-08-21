@@ -16,6 +16,7 @@ import {
   Clock,
   Code2,
   CreditCard,
+  Eye,
   FileSearch,
   Gauge,
   Globe,
@@ -31,7 +32,9 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { useConfirm } from "@/lib/confirm";
 import { apiFetch } from "@/lib/api";
 import type { Module } from "@/lib/types";
 import { ModulesContext } from "@/lib/modulesContext";
@@ -41,15 +44,23 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
 import { cn } from "@/lib/cn";
 
-const tenantNavItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  /** false = hidden while "View as Employee" preview is on. This is a UI preview only, not a permission check. */
+  employeeVisible?: boolean;
+}
+
+const tenantNavItems: NavItem[] = [
   { href: "/dashboard",         label: "Dashboard",         icon: LayoutDashboard },
-  { href: "/advisor",           label: "AI Advisor",        icon: Sparkles },
+  { href: "/advisor",           label: "AI Advisor",        icon: Sparkles,        employeeVisible: false },
   { href: "/employees",         label: "Employees",         icon: Users },
-  { href: "/departments",       label: "Departments",       icon: Network },
+  { href: "/departments",       label: "Departments",       icon: Network,         employeeVisible: false },
   { href: "/attendance",        label: "Attendance",        icon: Clock },
   { href: "/leave",             label: "Leave",             icon: CalendarDays },
-  { href: "/modules",           label: "App Marketplace",   icon: Blocks },
-  { href: "/recruitment",       label: "Resume Parser",     icon: FileSearch },
+  { href: "/modules",           label: "App Marketplace",   icon: Blocks,          employeeVisible: false },
+  { href: "/recruitment",       label: "Resume Parser",     icon: FileSearch,      employeeVisible: false },
   { href: "/skills",            label: "Skills Matrix",     icon: BarChart3 },
   { href: "/knowledge-base",    label: "Knowledge Base",    icon: BookOpen },
   { href: "/recognition",       label: "Recognition",       icon: Award },
@@ -58,14 +69,14 @@ const tenantNavItems = [
   { href: "/meetings",          label: "Meetings",          icon: CalendarCheck },
   { href: "/assets",            label: "Assets",            icon: Boxes },
   { href: "/compliance",        label: "Compliance",        icon: ShieldCheck },
-  { href: "/analytics",         label: "Analytics",         icon: LineChart },
-  { href: "/payroll-simulator", label: "Payroll Simulator", icon: Wallet },
-  { href: "/payroll-config",    label: "Payroll Config",    icon: Globe },
-  { href: "/developer",         label: "Developer API",     icon: Code2 },
-  { href: "/settings/branding", label: "Branding",          icon: Palette },
+  { href: "/analytics",         label: "Analytics",         icon: LineChart,       employeeVisible: false },
+  { href: "/payroll-simulator", label: "Payroll Simulator", icon: Wallet,          employeeVisible: false },
+  { href: "/payroll-config",    label: "Payroll Config",    icon: Globe,           employeeVisible: false },
+  { href: "/developer",         label: "Developer API",     icon: Code2,           employeeVisible: false },
+  { href: "/settings/branding", label: "Branding",          icon: Palette,         employeeVisible: false },
 ];
 
-const superAdminNavItems = [
+const superAdminNavItems: NavItem[] = [
   { href: "/admin",           label: "Platform Dashboard", icon: Gauge },
   { href: "/admin/companies", label: "Companies",          icon: Building2 },
   { href: "/admin/plans",     label: "Plans",              icon: CreditCard },
@@ -95,7 +106,7 @@ function NavLinks({
   pathname,
   onNavigate,
 }: {
-  navItems: typeof tenantNavItems;
+  navItems: NavItem[];
   pathname: string;
   onNavigate?: () => void;
 }) {
@@ -134,15 +145,27 @@ function NavLinks({
 
 export function DashboardShell({ children }: { children: ReactNode }) {
   const { user, company, loading, logout } = useAuth();
+  const confirm = useConfirm();
   const pathname = usePathname();
   const router = useRouter();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [enabledModuleSlugs, setEnabledModuleSlugs] = useState<Set<string> | null>(null);
+  const [viewAsEmployee, setViewAsEmployee] = useState(false);
 
   const isSuperAdmin = Boolean(user?.is_super_admin);
   const inAdminArea = pathname.startsWith("/admin");
+  const canViewAsEmployee = Boolean(
+    user?.roles?.includes("company-admin") || user?.roles?.includes("manager")
+  );
 
   async function handleLogout() {
+    const ok = await confirm({
+      title: "Log out?",
+      description: "You'll need to sign in again to access your workspace.",
+      confirmLabel: "Log out",
+      variant: "danger",
+    });
+    if (!ok) return;
     await logout();
     router.push("/login");
   }
@@ -168,6 +191,25 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     else if (!isSuperAdmin && inAdminArea) router.replace("/dashboard");
   }, [loading, user, isSuperAdmin, inAdminArea, router]);
 
+  const navItems = (isSuperAdmin ? superAdminNavItems : tenantNavItems).filter((item) => {
+    const requiredSlug = moduleGatedRoutes[item.href];
+    if (requiredSlug && enabledModuleSlugs && !enabledModuleSlugs.has(requiredSlug)) return false;
+    if (viewAsEmployee && item.employeeVisible === false) return false;
+    return true;
+  });
+
+  useEffect(() => {
+    if (!viewAsEmployee) return;
+    const stillVisible = navItems.some((item) =>
+      item.href === "/admin" ? pathname === item.href : pathname.startsWith(item.href)
+    );
+    if (!stillVisible) router.replace("/dashboard");
+    // navItems is derived fresh each render from stable inputs already in this
+    // dependency list, so it's intentionally left out to avoid re-running on
+    // every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewAsEmployee, pathname, router]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-gray-500 dark:text-gray-400">
@@ -183,14 +225,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       </div>
     );
   }
-
-  const navItems = (isSuperAdmin ? superAdminNavItems : tenantNavItems).filter(
-    (item) => {
-      const requiredSlug = moduleGatedRoutes[item.href];
-      if (!requiredSlug || !enabledModuleSlugs) return true;
-      return enabledModuleSlugs.has(requiredSlug);
-    }
-  );
 
   return (
     <ModulesContext.Provider value={{ enabledSlugs: isSuperAdmin ? new Set() : enabledModuleSlugs }}>
@@ -253,9 +287,29 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             {/* Theme toggle */}
             <ThemeToggle />
 
-            <UserMenu />
+            <UserMenu
+              canViewAsEmployee={canViewAsEmployee}
+              viewAsEmployee={viewAsEmployee}
+              onToggleViewAsEmployee={() => setViewAsEmployee((v) => !v)}
+            />
           </div>
         </header>
+
+        {viewAsEmployee && (
+          <div className="flex items-center justify-between gap-3 border-b border-brand-200 bg-brand-50 px-4 py-2 text-sm text-brand-800 dark:border-brand-900/40 dark:bg-brand-900/20 dark:text-brand-300 sm:px-6">
+            <span className="flex items-center gap-2">
+              <Eye className="size-4 shrink-0" aria-hidden="true" />
+              Viewing as Employee — the sidebar only shows what a regular employee sees.
+            </span>
+            <button
+              type="button"
+              onClick={() => setViewAsEmployee(false)}
+              className="shrink-0 font-medium underline-offset-2 hover:underline"
+            >
+              Exit
+            </button>
+          </div>
+        )}
 
         <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>

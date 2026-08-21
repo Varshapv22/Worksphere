@@ -22,6 +22,8 @@ interface RegisterCompanyPayload {
 
 interface MeResponse {
   user: User;
+  roles: string[];
+  permissions: string[];
 }
 
 interface UpdateProfilePayload {
@@ -34,6 +36,8 @@ interface UpdateProfilePayload {
 
 interface LoginResponse {
   user: User;
+  roles: string[];
+  permissions: string[];
   token: string;
 }
 
@@ -77,8 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await apiFetch<MeResponse>("/auth/me");
         if (cancelled) return;
         setToken(token); // re-sync the cookie in case it expired independently of localStorage
-        setUser(res.user);
-        setCompany(res.user.company ?? null);
+        const mergedUser = { ...res.user, roles: res.roles, permissions: res.permissions };
+        setUser(mergedUser);
+        setCompany(mergedUser.company ?? null);
       } catch {
         if (cancelled) return;
         setToken(null);
@@ -102,9 +107,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       auth: false,
     });
     setToken(res.token);
-    setUser(res.user);
-    setCompany(res.user.company ?? null);
-    return res.user;
+    const mergedUser = { ...res.user, roles: res.roles, permissions: res.permissions };
+    setUser(mergedUser);
+    setCompany(mergedUser.company ?? null);
+    return mergedUser;
   }, []);
 
   // New companies start pending admin approval - no token is issued, so
@@ -121,15 +127,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const updateProfile = useCallback(async (payload: UpdateProfilePayload) => {
-    const res = await apiFetch<MeResponse>("/auth/me", {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    });
-    setUser(res.user);
-    setCompany(res.user.company ?? null);
-    return res.user;
-  }, []);
+  const updateProfile = useCallback(
+    async (payload: UpdateProfilePayload) => {
+      const res = await apiFetch<{ user: User }>("/auth/me", {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      const mergedUser = { ...res.user, roles: user?.roles, permissions: user?.permissions, employee: user?.employee };
+      setUser(mergedUser);
+      setCompany(mergedUser.company ?? null);
+      return mergedUser;
+    },
+    [user]
+  );
 
   const logout = useCallback(async () => {
     try {

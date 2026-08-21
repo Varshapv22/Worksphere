@@ -16,6 +16,8 @@ export interface User {
   roles?: string[];
   permissions?: string[];
   is_super_admin?: boolean;
+  /** The employee record linked to this login, if any (lets an admin/manager act as an employee too — clock in/out, request leave). */
+  employee?: { id: number } | null;
 }
 
 export interface Department {
@@ -60,7 +62,7 @@ export interface Employee {
 
 export interface AttendanceRecord {
   id: number;
-  employee_id: number;
+  employee?: { id: number; full_name: string; employee_code?: string } | null;
   date: string;
   clock_in: string | null;
   clock_out: string | null;
@@ -76,7 +78,6 @@ export type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
 
 export interface LeaveRequest {
   id: number;
-  employee_id: number;
   employee?: { id: number; full_name: string; employee_code: string } | null;
   leave_type_id: number;
   leave_type?: LeaveType;

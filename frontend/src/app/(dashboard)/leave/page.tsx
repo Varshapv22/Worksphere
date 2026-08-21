@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Gift, ListChecks, Plus, Trash2, X } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Gift, ListChecks, Plus, Trash2, User as UserIcon, Users, X } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/lib/toast";
@@ -19,7 +19,9 @@ import { PageHeader } from "@/components/PageHeader";
 import { Tabs } from "@/components/Tabs";
 import { cn } from "@/lib/cn";
 
-type LeaveTab = "calendar" | "holidays" | "requests";
+type LeaveScope = "mine" | "team";
+type MineView = "calendar" | "requests";
+type TeamView = "requests" | "holidays";
 
 function badgeVariant(status: LeaveStatus) {
   if (status === "approved") return "success" as const;
@@ -235,7 +237,9 @@ function RequestLeaveModal({
 
 export default function LeavePage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<LeaveTab>("calendar");
+  const [scope, setScope] = useState<LeaveScope>("mine");
+  const [mineView, setMineView] = useState<MineView>("calendar");
+  const [teamView, setTeamView] = useState<TeamView>("requests");
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
@@ -248,7 +252,17 @@ export default function LeavePage() {
   const [holidayDate, setHolidayDate] = useState("");
   const [holidayError, setHolidayError] = useState<string | null>(null);
   const [addingHoliday, setAddingHoliday] = useState(false);
+  const [teamEmployeeFilter, setTeamEmployeeFilter] = useState("");
   const toast = useToast();
+
+  // Only managers/admins get team-wide requests back from the API at all -
+  // for a plain employee this is always false and they just see their own.
+  const canViewTeam = Boolean(
+    user?.permissions?.includes("leave.manage") || user?.permissions?.includes("leave.approve")
+  );
+  // Holiday create/delete is gated server-side on leave.manage specifically -
+  // a leave.approve-only manager can see the Team tab but not manage holidays.
+  const canManageHolidays = Boolean(user?.permissions?.includes("leave.manage"));
 
   const loadHolidays = useCallback(async () => {
     try {
@@ -295,10 +309,18 @@ export default function LeavePage() {
     return map;
   }, [holidays]);
 
+  // The API returns every employee's requests to a manager/admin, so "my"
+  // rows have to be picked out by employee_id, not just left unfiltered.
+  const myRequests = useMemo(
+    () => (user?.employee ? requests.filter((r) => r.employee?.id === user.employee!.id) : requests),
+    [requests, user?.employee]
+  );
+
+  // My Leave calendar is scoped to the signed-in user's own requests, so the
+  // day badge can show status (Pending/Approved/Rejected) instead of a name.
   const leaveByDate = useMemo(() => {
     const map = new Map<string, LeaveRequest[]>();
-    for (const r of requests) {
-      if (r.status !== "approved" && r.status !== "pending") continue;
+    for (const r of myRequests) {
       const cur = parseApiDate(r.start_date);
       const end = parseApiDate(r.end_date);
       let guard = 0;
@@ -312,11 +334,24 @@ export default function LeavePage() {
       }
     }
     return map;
-  }, [requests]);
+  }, [myRequests]);
 
   const monthGrid = useMemo(() => buildMonthGrid(viewDate), [viewDate]);
   const todayIso = useMemo(() => toISODate(new Date()), []);
   const pendingCount = useMemo(() => requests.filter((r) => r.status === "pending").length, [requests]);
+
+  const teamMembers = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const r of requests) {
+      if (r.employee) map.set(r.employee.id, r.employee.full_name);
+    }
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [requests]);
+
+  const teamRequests = useMemo(
+    () => (teamEmployeeFilter ? requests.filter((r) => r.employee?.id === Number(teamEmployeeFilter)) : requests),
+    [requests, teamEmployeeFilter]
+  );
 
   async function handleApprove(id: number) {
     try {
@@ -368,8 +403,7 @@ export default function LeavePage() {
     }
   }
 
-  const columns: Column<LeaveRequest>[] = [
-    { header: "Employee", accessor: (r) => r.employee?.full_name ?? `#${r.employee_id}` },
+  const baseColumns: Column<LeaveRequest>[] = [
     { header: "Type", accessor: (r) => r.leave_type?.name ?? `#${r.leave_type_id}` },
     { header: "From", accessor: (r) => r.start_date },
     { header: "To", accessor: (r) => r.end_date },
@@ -382,53 +416,93 @@ export default function LeavePage() {
         </Badge>
       ),
     },
-    {
-      header: "Actions",
-      accessor: (r) =>
-        r.status === "pending" && r.employee_id !== user?.id ? (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 rounded-md border border-success-200 bg-success-50 px-2.5 py-1.5 text-xs font-semibold text-success-700 transition-colors hover:bg-success-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success-600 dark:border-success-900/40 dark:bg-success-900/20 dark:text-success-400 dark:hover:bg-success-900/30"
-              onClick={() => handleApprove(r.id)}
-            >
-              <Check className="size-3.5" aria-hidden="true" />
-              Approve
-            </button>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 rounded-md border border-danger-200 bg-danger-50 px-2.5 py-1.5 text-xs font-semibold text-danger-700 transition-colors hover:bg-danger-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger-600 dark:border-danger-900/40 dark:bg-danger-900/20 dark:text-danger-400 dark:hover:bg-danger-900/30"
-              onClick={() => handleReject(r.id)}
-            >
-              <X className="size-3.5" aria-hidden="true" />
-              Reject
-            </button>
-          </div>
-        ) : (
-          <span className="text-gray-400">—</span>
-        ),
-    },
   ];
+
+  const actionsColumn: Column<LeaveRequest> = {
+    header: "Actions",
+    accessor: (r) =>
+      canViewTeam && r.status === "pending" && r.employee?.id !== user?.employee?.id ? (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md border border-success-200 bg-success-50 px-2.5 py-1.5 text-xs font-semibold text-success-700 transition-colors hover:bg-success-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success-600 dark:border-success-900/40 dark:bg-success-900/20 dark:text-success-400 dark:hover:bg-success-900/30"
+            onClick={() => handleApprove(r.id)}
+          >
+            <Check className="size-3.5" aria-hidden="true" />
+            Approve
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md border border-danger-200 bg-danger-50 px-2.5 py-1.5 text-xs font-semibold text-danger-700 transition-colors hover:bg-danger-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger-600 dark:border-danger-900/40 dark:bg-danger-900/20 dark:text-danger-400 dark:hover:bg-danger-900/30"
+            onClick={() => handleReject(r.id)}
+          >
+            <X className="size-3.5" aria-hidden="true" />
+            Reject
+          </button>
+        </div>
+      ) : (
+        <span className="text-gray-400">—</span>
+      ),
+  };
+
+  const employeeColumn: Column<LeaveRequest> = {
+    header: "Employee",
+    accessor: (r) => (
+      <span className="font-medium text-gray-900 dark:text-gray-100">
+        {r.employee?.full_name ?? "Unknown employee"}
+      </span>
+    ),
+  };
+
+  const mineColumns: Column<LeaveRequest>[] = baseColumns;
+  const teamColumns: Column<LeaveRequest>[] = [employeeColumn, ...baseColumns, actionsColumn];
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Leave"
-        description="Request time off and review your team's requests"
+        description={
+          scope === "team"
+            ? "Viewing and approving requests for everyone on your team"
+            : "Request time off and track your own requests"
+        }
         actions={
-          <Tabs
-            active={activeTab}
-            onChange={(key) => setActiveTab(key as LeaveTab)}
-            items={[
-              { key: "calendar", label: "Calendar", icon: CalendarDays },
-              { key: "holidays", label: "Company Holidays", icon: Gift, badge: holidays.length },
-              { key: "requests", label: "Requests", icon: ListChecks, badge: pendingCount },
-            ]}
-          />
+          canViewTeam && (
+            <Tabs
+              active={scope}
+              onChange={(key) => setScope(key as LeaveScope)}
+              items={[
+                { key: "mine", label: "My Leave", icon: UserIcon },
+                { key: "team", label: "Team", icon: Users, badge: pendingCount },
+              ]}
+            />
+          )
         }
       />
 
-      {activeTab === "calendar" && (
+      {scope === "mine" && (
+        <Tabs
+          active={mineView}
+          onChange={(key) => setMineView(key as MineView)}
+          items={[
+            { key: "calendar", label: "Calendar", icon: CalendarDays },
+            { key: "requests", label: "My Requests", icon: ListChecks },
+          ]}
+        />
+      )}
+
+      {scope === "team" && canViewTeam && canManageHolidays && (
+        <Tabs
+          active={teamView}
+          onChange={(key) => setTeamView(key as TeamView)}
+          items={[
+            { key: "requests", label: "Requests", icon: ListChecks, badge: pendingCount },
+            { key: "holidays", label: "Company Holidays", icon: Gift, badge: holidays.length },
+          ]}
+        />
+      )}
+
+      {scope === "mine" && mineView === "calendar" && (
       <Card
         title={viewDate.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
         description="Click any day to request leave"
@@ -510,10 +584,10 @@ export default function LeavePage() {
                     {visible.map((r) => (
                       <span
                         key={r.id}
-                        title={`${r.employee?.full_name ?? "Employee"} · ${r.leave_type?.name ?? "Leave"} · ${r.status}${r.is_half_day ? " · half day" : ""}`}
+                        title={`${r.leave_type?.name ?? "Leave"} · ${r.status}${r.is_half_day ? " · half day" : ""}`}
                       >
-                        <Badge dot variant={badgeVariant(r.status)} className="w-full !inline-flex truncate">
-                          {r.employee?.full_name?.split(" ")[0] ?? "Employee"}
+                        <Badge dot variant={badgeVariant(r.status)} className="w-full !inline-flex truncate capitalize">
+                          {r.status}
                         </Badge>
                       </span>
                     ))}
@@ -532,13 +606,13 @@ export default function LeavePage() {
             <span className="size-2 rounded-full bg-warning-600" aria-hidden="true" /> Pending
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-danger-600" aria-hidden="true" /> Holiday
+            <span className="size-2 rounded-full bg-danger-600" aria-hidden="true" /> Rejected / Holiday
           </span>
         </div>
       </Card>
       )}
 
-      {activeTab === "holidays" && (
+      {scope === "team" && canManageHolidays && teamView === "holidays" && (
       <Card title="Company Holidays" description="Non-working days visible to everyone on the calendar above">
         <form onSubmit={handleAddHoliday} className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
@@ -600,8 +674,8 @@ export default function LeavePage() {
         }}
       />
 
-      {activeTab === "requests" && (
-      <Card title="Requests">
+      {scope === "mine" && mineView === "requests" && (
+      <Card title="My Requests">
         <div className="mb-4 sm:w-56">
           <Select
             label="Status"
@@ -617,8 +691,52 @@ export default function LeavePage() {
         </div>
         {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
         <Table
-          columns={columns}
-          data={requests}
+          columns={mineColumns}
+          data={myRequests}
+          keyExtractor={(r) => r.id}
+          loading={loading}
+          emptyMessage="No leave requests found."
+        />
+      </Card>
+      )}
+
+      {scope === "team" && canViewTeam && (teamView === "requests" || !canManageHolidays) && (
+      <Card title="Team requests" description="Every employee's leave requests">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="sm:w-56">
+            <Select
+              label="Status"
+              id="status_filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </Select>
+          </div>
+          {teamMembers.length > 0 && (
+            <div className="sm:w-64">
+              <Select
+                label="Employee"
+                value={teamEmployeeFilter}
+                onChange={(e) => setTeamEmployeeFilter(e.target.value)}
+              >
+                <option value="">All employees</option>
+                {teamMembers.map(([id, name]) => (
+                  <option key={id} value={id}>
+                    {name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )}
+        </div>
+        {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
+        <Table
+          columns={teamColumns}
+          data={teamRequests}
           keyExtractor={(r) => r.id}
           loading={loading}
           emptyMessage="No leave requests found."

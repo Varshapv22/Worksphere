@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, LogOut, Pencil } from "lucide-react";
+import { ChevronDown, Eye, EyeOff, LogOut, Pencil } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/lib/toast";
+import { useConfirm } from "@/lib/confirm";
 import { ApiError } from "@/lib/api";
 import { Modal } from "@/components/Modal";
 import { Input } from "@/components/Input";
@@ -20,8 +21,15 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-export function UserMenu() {
+interface UserMenuProps {
+  canViewAsEmployee?: boolean;
+  viewAsEmployee?: boolean;
+  onToggleViewAsEmployee?: () => void;
+}
+
+export function UserMenu({ canViewAsEmployee, viewAsEmployee, onToggleViewAsEmployee }: UserMenuProps) {
   const { user, logout } = useAuth();
+  const confirm = useConfirm();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -48,6 +56,14 @@ export function UserMenu() {
   if (!user) return null;
 
   async function handleLogout() {
+    setOpen(false);
+    const ok = await confirm({
+      title: "Log out?",
+      description: "You'll need to sign in again to access your workspace.",
+      confirmLabel: "Log out",
+      variant: "danger",
+    });
+    if (!ok) return;
     await logout();
     router.push("/login");
   }
@@ -102,6 +118,24 @@ export function UserMenu() {
               <Pencil className="size-4" aria-hidden="true" />
               Edit profile
             </button>
+            {canViewAsEmployee && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  onToggleViewAsEmployee?.();
+                }}
+                className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700/60"
+              >
+                {viewAsEmployee ? (
+                  <EyeOff className="size-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="size-4" aria-hidden="true" />
+                )}
+                {viewAsEmployee ? "Exit Employee View" : "View as Employee"}
+              </button>
+            )}
             <button
               type="button"
               role="menuitem"

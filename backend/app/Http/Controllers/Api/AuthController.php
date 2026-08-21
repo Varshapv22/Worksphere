@@ -112,8 +112,13 @@ class AuthController extends Controller
 
         $token = $user->createToken('api')->plainTextToken;
 
+        $user->load('employee');
+        setPermissionsTeamId($user->company_id);
+
         return response()->json([
             'user' => $user,
+            'roles' => $user->getRoleNames(),
+            'permissions' => $user->getAllPermissions()->pluck('name'),
             'token' => $token,
         ]);
     }
@@ -133,7 +138,7 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
-        $user = $request->user()->load('company');
+        $user = $request->user()->load('company', 'employee');
 
         return response()->json([
             'user' => $user,
