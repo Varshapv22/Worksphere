@@ -99,6 +99,18 @@ export interface Holiday {
   created_at?: string;
 }
 
+export interface AdminActivityLog {
+  id: number;
+  action: string;
+  subject_type: string | null;
+  subject_id: number | null;
+  subject_label: string | null;
+  changes: Record<string, unknown> | null;
+  ip_address: string | null;
+  admin: { id: number; name: string; email: string } | null;
+  created_at: string;
+}
+
 export interface PaginationMeta {
   current_page: number;
   last_page: number;

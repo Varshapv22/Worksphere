@@ -20,6 +20,7 @@ import {
   FileSearch,
   Gauge,
   Globe,
+  History,
   LayoutDashboard,
   LineChart,
   LogOut,
@@ -81,6 +82,7 @@ const superAdminNavItems: NavItem[] = [
   { href: "/admin/companies", label: "Companies",          icon: Building2 },
   { href: "/admin/plans",     label: "Plans",              icon: CreditCard },
   { href: "/admin/modules",   label: "Modules",            icon: Blocks },
+  { href: "/admin/activity-log", label: "Activity Log",    icon: History },
 ];
 
 const moduleGatedRoutes: Record<string, string> = {
