@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\AdminCompanyModuleResource;
+use App\Models\AdminActivityLog;
 use App\Models\Company;
 use App\Models\Module;
 use Illuminate\Http\Request;
@@ -51,6 +52,7 @@ class CompanyModuleController extends Controller
         ]);
 
         $isGranted = $validated['is_granted'];
+        $wasGranted = (bool) ($company->modules()->find($module->id)?->pivot->is_granted ?? true);
 
         $company->modules()->syncWithoutDetaching([
             $module->id => array_merge(
@@ -62,6 +64,13 @@ class CompanyModuleController extends Controller
         $pivot = $company->modules()->find($module->id)?->pivot;
         $module->is_enabled = (bool) ($pivot->is_enabled ?? false);
         $module->is_granted = $isGranted;
+
+        AdminActivityLog::record(
+            $isGranted ? 'company_module.grant' : 'company_module.revoke',
+            $company,
+            ['module' => $module->slug, 'before' => ['is_granted' => $wasGranted], 'after' => ['is_granted' => $isGranted]],
+            "{$company->name} — {$module->name}"
+        );
 
         return new AdminCompanyModuleResource($module);
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Api\Admin\CompanyController as AdminCompanyController;
 use App\Http\Controllers\Api\Admin\CompanyModuleController as AdminCompanyModuleController;
 use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
@@ -215,6 +216,7 @@ Route::prefix('v1')->group(function () {
     // Super admin only - platform management, not scoped to any tenant.
     Route::middleware(['auth:sanctum', 'super-admin'])->prefix('admin')->group(function () {
         Route::get('/stats', [PlatformStatsController::class, 'index']);
+        Route::get('/activity-logs', [AdminActivityLogController::class, 'index']);
 
         Route::get('/companies', [AdminCompanyController::class, 'index']);
         Route::get('/companies/{company}', [AdminCompanyController::class, 'show']);

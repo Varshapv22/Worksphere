@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\AdminSubscriptionPlanResource;
+use App\Models\AdminActivityLog;
 use App\Models\SubscriptionPlan;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -24,6 +25,8 @@ class SubscriptionPlanController extends Controller
 
         $plan = SubscriptionPlan::create($validated);
 
+        AdminActivityLog::record('subscription_plan.create', $plan, ['after' => $validated], $plan->name);
+
         return new AdminSubscriptionPlanResource($plan->loadCount('companies'));
     }
 
@@ -31,7 +34,10 @@ class SubscriptionPlanController extends Controller
     {
         $validated = $this->validated($request, $subscriptionPlan->id);
 
+        $before = $subscriptionPlan->only(array_keys($validated));
         $subscriptionPlan->update($validated);
+
+        AdminActivityLog::record('subscription_plan.update', $subscriptionPlan, ['before' => $before, 'after' => $validated], $subscriptionPlan->name);
 
         return new AdminSubscriptionPlanResource($subscriptionPlan->fresh()->loadCount('companies'));
     }
@@ -44,7 +50,10 @@ class SubscriptionPlanController extends Controller
             ]);
         }
 
+        $name = $subscriptionPlan->name;
         $subscriptionPlan->delete();
+
+        AdminActivityLog::record('subscription_plan.delete', $subscriptionPlan, [], $name);
 
         return response()->noContent();
     }

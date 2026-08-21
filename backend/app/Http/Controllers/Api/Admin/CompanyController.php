@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\AdminCompanyResource;
+use App\Models\AdminActivityLog;
 use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -48,7 +49,10 @@ class CompanyController extends Controller
             'subscription_plan_id' => ['sometimes', 'nullable', Rule::exists('subscription_plans', 'id')],
         ]);
 
+        $before = $company->only(array_keys($validated));
         $company->update($validated);
+
+        AdminActivityLog::record('company.update', $company, ['before' => $before, 'after' => $validated], $company->name);
 
         return new AdminCompanyResource($company->fresh()->loadCount('employees')->load('subscriptionPlan'));
     }
@@ -59,7 +63,10 @@ class CompanyController extends Controller
      */
     public function approve(Company $company)
     {
+        $before = $company->status;
         $company->update(['status' => 'approved', 'is_active' => true]);
+
+        AdminActivityLog::record('company.approve', $company, ['before' => ['status' => $before], 'after' => ['status' => 'approved']], $company->name);
 
         return new AdminCompanyResource($company->fresh()->loadCount('employees')->load('subscriptionPlan'));
     }
@@ -69,7 +76,10 @@ class CompanyController extends Controller
      */
     public function reject(Company $company)
     {
+        $before = $company->status;
         $company->update(['status' => 'rejected']);
+
+        AdminActivityLog::record('company.reject', $company, ['before' => ['status' => $before], 'after' => ['status' => 'rejected']], $company->name);
 
         return new AdminCompanyResource($company->fresh()->loadCount('employees')->load('subscriptionPlan'));
     }

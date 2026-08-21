@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\AdminModuleResource;
+use App\Models\AdminActivityLog;
 use App\Models\Module;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -29,6 +30,8 @@ class ModuleController extends Controller
 
         $module = Module::create($validated)->fresh();
 
+        AdminActivityLog::record('module.create', $module, ['after' => $validated], $module->name);
+
         return new AdminModuleResource($module->loadCount(['companies as enabled_company_count' => function ($query) {
             $query->where('company_module.is_enabled', true);
         }]));
@@ -38,7 +41,10 @@ class ModuleController extends Controller
     {
         $validated = $this->validated($request, $module->id);
 
+        $before = $module->only(array_keys($validated));
         $module->update($validated);
+
+        AdminActivityLog::record('module.update', $module, ['before' => $before, 'after' => $validated], $module->name);
 
         return new AdminModuleResource($module->fresh()->loadCount(['companies as enabled_company_count' => function ($query) {
             $query->where('company_module.is_enabled', true);
@@ -53,7 +59,10 @@ class ModuleController extends Controller
             ]);
         }
 
+        $name = $module->name;
         $module->delete();
+
+        AdminActivityLog::record('module.delete', $module, [], $name);
 
         return response()->noContent();
     }
