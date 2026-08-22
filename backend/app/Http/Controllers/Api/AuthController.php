@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdminActivityLog;
 use App\Models\Company;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use PragmaRX\Google2FA\Google2FA;
 use Spatie\Permission\Models\Role;
 
 class AuthController extends Controller
@@ -110,17 +114,77 @@ class AuthController extends Controller
             }
         }
 
+        if ($user->is_super_admin && $user->hasTwoFactorEnabled()) {
+            $challenge = Str::random(40);
+            Cache::put("2fa_challenge:{$challenge}", $user->id, now()->addMinutes(5));
+
+            return response()->json([
+                'requires_2fa' => true,
+                'challenge' => $challenge,
+            ]);
+        }
+
+        return response()->json($this->issueSession($user));
+    }
+
+    /**
+     * Complete login for a super admin with 2FA enabled: verify the TOTP
+     * code (or a recovery code) against the challenge from login().
+     */
+    public function verifyTwoFactor(Request $request)
+    {
+        $validated = $request->validate([
+            'challenge' => ['required', 'string'],
+            'code' => ['required', 'string'],
+        ]);
+
+        $userId = Cache::get("2fa_challenge:{$validated['challenge']}");
+
+        if (! $userId) {
+            return response()->json(['message' => 'This login attempt has expired. Please sign in again.'], 422);
+        }
+
+        $user = User::findOrFail($userId);
+        $google2fa = new Google2FA;
+
+        $validCode = $google2fa->verifyKey($user->two_factor_secret, $validated['code']);
+        $validRecovery = in_array($validated['code'], $user->two_factor_recovery_codes ?? [], true);
+
+        if (! $validCode && ! $validRecovery) {
+            return response()->json(['message' => 'Invalid code.'], 422);
+        }
+
+        Cache::forget("2fa_challenge:{$validated['challenge']}");
+
+        if ($validRecovery) {
+            $user->update([
+                'two_factor_recovery_codes' => array_values(array_diff($user->two_factor_recovery_codes, [$validated['code']])),
+            ]);
+        }
+
+        return response()->json($this->issueSession($user));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function issueSession(User $user): array
+    {
         $token = $user->createToken('api')->plainTextToken;
+
+        if ($user->is_super_admin) {
+            AdminActivityLog::record('auth.login', null, [], $user->name);
+        }
 
         $user->load('employee');
         setPermissionsTeamId($user->company_id);
 
-        return response()->json([
+        return [
             'user' => $user,
             'roles' => $user->getRoleNames(),
             'permissions' => $user->getAllPermissions()->pluck('name'),
             'token' => $token,
-        ]);
+        ];
     }
 
     /**

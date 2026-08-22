@@ -9,6 +9,7 @@ import { useConfirm } from "@/lib/confirm";
 import type { AdminCompany, Paginated } from "@/lib/types";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
+import { Input } from "@/components/Input";
 import { Table, type Column } from "@/components/Table";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -24,12 +25,15 @@ export default function AdminCompaniesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (searchTerm: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch<Paginated<AdminCompany>>("/admin/companies?page=1");
+      const params = new URLSearchParams({ page: "1" });
+      if (searchTerm) params.set("search", searchTerm);
+      const res = await apiFetch<Paginated<AdminCompany>>(`/admin/companies?${params.toString()}`);
       setCompanies(res.data);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load companies.");
@@ -39,8 +43,9 @@ export default function AdminCompaniesPage() {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const timeout = setTimeout(() => load(search), 300);
+    return () => clearTimeout(timeout);
+  }, [load, search]);
 
   async function toggleActive(company: AdminCompany) {
     const suspending = company.is_active;
@@ -68,7 +73,7 @@ export default function AdminCompaniesPage() {
         body: JSON.stringify({ is_active: !company.is_active }),
       });
       toast.success(suspending ? "Company suspended." : "Company reactivated.");
-      load();
+      load(search);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Failed to update company.");
     } finally {
@@ -89,7 +94,7 @@ export default function AdminCompaniesPage() {
     try {
       await apiFetch(`/admin/companies/${company.id}/approve`, { method: "POST" });
       toast.success(`${company.name} approved — they can now sign in.`);
-      load();
+      load(search);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Failed to approve company.");
     } finally {
@@ -110,7 +115,7 @@ export default function AdminCompaniesPage() {
     try {
       await apiFetch(`/admin/companies/${company.id}/reject`, { method: "POST" });
       toast.success(`${company.name} rejected.`);
-      load();
+      load(search);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Failed to reject company.");
     } finally {
@@ -122,7 +127,7 @@ export default function AdminCompaniesPage() {
     {
       header: "Company",
       accessor: (c) => (
-        <Link href={`/admin/companies/${c.id}/modules`} className="group inline-block">
+        <Link href={`/admin/companies/${c.id}`} className="group inline-block">
           <p className="font-medium text-gray-900 group-hover:text-brand-700 group-hover:underline dark:text-gray-100 dark:group-hover:text-brand-400">
             {c.name}
           </p>
@@ -274,6 +279,13 @@ export default function AdminCompaniesPage() {
     <div className="flex flex-col gap-4">
       <PageHeader title="Companies" description="Every tenant workspace on the platform" />
       <Card>
+        <div className="mb-4">
+          <Input
+            placeholder="Search by company name or email…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
         {error && <p className="mb-3 text-sm text-danger-600">{error}</p>}
         <Table
           columns={columns}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\AdminActivityLogResource;
 use App\Models\AdminActivityLog;
+use App\Models\Company;
 use Illuminate\Http\Request;
 
 class ActivityLogController extends Controller
@@ -18,6 +19,11 @@ class ActivityLogController extends Controller
 
         if ($request->filled('action')) {
             $query->where('action', $request->string('action'));
+        }
+
+        if ($request->filled('company_id')) {
+            $query->where('subject_type', (new Company)->getMorphClass())
+                ->where('subject_id', $request->integer('company_id'));
         }
 
         if ($request->filled('search')) {

@@ -11,26 +11,95 @@ import { Input } from "@/components/Input";
 import { AuthShowcase } from "@/components/AuthShowcase";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, completeTwoFactorLogin } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [challenge, setChallenge] = useState<string | null>(null);
+  const [code, setCode] = useState("");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const user = await login(email, password);
-      router.push(user.is_super_admin ? "/admin" : "/dashboard");
+      const result = await login(email, password);
+      if (result.requiresTwoFactor) {
+        setChallenge(result.challenge);
+      } else {
+        router.push(result.user.is_super_admin ? "/admin" : "/dashboard");
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleTwoFactorSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!challenge) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const user = await completeTwoFactorLogin(challenge, code);
+      router.push(user.is_super_admin ? "/admin" : "/dashboard");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Invalid code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (challenge) {
+    return (
+      <div className="flex min-h-screen">
+        <div className="flex w-full flex-col justify-center px-6 py-12 sm:px-12 lg:w-1/2 lg:px-16 xl:px-24">
+          <div className="mx-auto w-full max-w-sm">
+            <h1 className="text-2xl font-semibold text-gray-900">Two-factor verification</h1>
+            <p className="mt-2 text-sm text-gray-500">
+              Enter the 6-digit code from your authenticator app, or a recovery code.
+            </p>
+            <form onSubmit={handleTwoFactorSubmit} className="mt-8 flex flex-col gap-4">
+              <Input
+                label="Code"
+                autoFocus
+                autoComplete="one-time-code"
+                placeholder="123456"
+                className="rounded-full"
+                required
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+              {error && (
+                <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-danger-50 px-3 py-2 text-sm text-danger-700">
+                  <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                  {error}
+                </div>
+              )}
+              <Button type="submit" size="lg" isLoading={loading} className="mt-2 w-full rounded-full">
+                Verify
+              </Button>
+              <button
+                type="button"
+                onClick={() => setChallenge(null)}
+                className="text-sm text-gray-500 hover:underline"
+              >
+                Back to sign in
+              </button>
+            </form>
+          </div>
+        </div>
+        <AuthShowcase
+          eyebrow="WorkSphere"
+          title="HR and payroll, without the busywork."
+          description="Employee records, attendance, and leave requests — all in one place, built for growing teams."
+        />
+      </div>
+    );
   }
 
   return (

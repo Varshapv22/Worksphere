@@ -40,6 +40,30 @@ class PlatformStatsController extends Controller
             ->sortByDesc('usage_percent')
             ->values();
 
+        $revenueByPlan = $companies
+            ->where('is_active', true)
+            ->whereNotNull('subscription_plan_id')
+            ->groupBy(fn (Company $company) => $company->subscriptionPlan->id)
+            ->map(fn ($group) => [
+                'plan_id' => $group->first()->subscriptionPlan->id,
+                'plan_name' => $group->first()->subscriptionPlan->name,
+                'company_count' => $group->count(),
+                'mrr' => round($group->sum(fn (Company $c) => (float) $c->subscriptionPlan->price_monthly), 2),
+            ])
+            ->sortByDesc('mrr')
+            ->values();
+
+        $trialEndingSoon = $companies
+            ->filter(fn (Company $c) => $c->trial_ends_at && $c->trial_ends_at->isFuture() && $c->trial_ends_at->diffInDays(now()) <= 7)
+            ->map(fn (Company $company) => [
+                'id' => $company->id,
+                'name' => $company->name,
+                'trial_ends_at' => $company->trial_ends_at,
+                'days_left' => (int) now()->diffInDays($company->trial_ends_at, false),
+            ])
+            ->sortBy('days_left')
+            ->values();
+
         return response()->json([
             'companies' => [
                 'total' => $companies->count(),
@@ -59,8 +83,10 @@ class PlatformStatsController extends Controller
             'revenue' => [
                 'mrr' => round($mrr, 2),
                 'arr' => round($mrr * 12, 2),
+                'by_plan' => $revenueByPlan,
             ],
             'companies_near_limit' => $nearLimit,
+            'trial_ending_soon' => $trialEndingSoon,
         ]);
     }
 }

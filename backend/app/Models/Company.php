@@ -45,6 +45,22 @@ class Company extends Model
         return $this->hasMany(User::class);
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function supportTickets(): HasMany
+    {
+        return $this->hasMany(SupportTicket::class);
+    }
+
+    public function featureFlags(): BelongsToMany
+    {
+        return $this->belongsToMany(FeatureFlag::class, 'company_feature_flag')
+            ->withPivot('is_enabled');
+    }
+
     public function departments(): HasMany
     {
         return $this->hasMany(Department::class);

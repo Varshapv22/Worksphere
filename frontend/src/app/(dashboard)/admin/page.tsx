@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Building2, Hourglass, TriangleAlert, Users, Wallet } from "lucide-react";
+import { Building2, Clock, Hourglass, TriangleAlert, Users, Wallet } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -52,6 +52,26 @@ export default function PlatformDashboardPage() {
             for approval — review them now.
           </span>
         </Link>
+      )}
+
+      {stats && stats.trial_ending_soon.length > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-info-100 bg-info-50 px-4 py-3 text-sm text-info-700">
+          <Clock className="size-4 shrink-0 mt-0.5" aria-hidden="true" />
+          <span>
+            <span className="font-semibold">
+              {stats.trial_ending_soon.length} {stats.trial_ending_soon.length === 1 ? "trial ends" : "trials end"} within 7 days:
+            </span>{" "}
+            {stats.trial_ending_soon.map((c, i) => (
+              <span key={c.id}>
+                {i > 0 && ", "}
+                <Link href={`/admin/companies/${c.id}`} className="underline hover:no-underline">
+                  {c.name}
+                </Link>{" "}
+                ({c.days_left <= 0 ? "today" : `${c.days_left}d`})
+              </span>
+            ))}
+          </span>
+        </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -144,6 +164,28 @@ export default function PlatformDashboardPage() {
           )}
         </Card>
       </div>
+
+      <Card title="Revenue by plan" description="Monthly recurring revenue split across active subscription plans">
+        {!stats ? (
+          <p className="text-sm text-gray-400">Loading…</p>
+        ) : stats.revenue.by_plan.length === 0 ? (
+          <EmptyState message="No active companies on a paid plan yet." />
+        ) : (
+          <ul className="flex flex-col divide-y divide-gray-100">
+            {stats.revenue.by_plan.map((p) => (
+              <li key={p.plan_id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                <div>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{p.plan_name}</span>
+                  <span className="ml-2 text-gray-500">
+                    {p.company_count} {p.company_count === 1 ? "company" : "companies"}
+                  </span>
+                </div>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{currency(p.mrr)}/mo</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
     </div>
   );
 }

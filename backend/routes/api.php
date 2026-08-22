@@ -1,12 +1,22 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\ActivityLogController as AdminActivityLogController;
+use App\Http\Controllers\Api\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Api\Admin\CompanyController as AdminCompanyController;
+use App\Http\Controllers\Api\Admin\CompanyDataController as AdminCompanyDataController;
+use App\Http\Controllers\Api\Admin\CompanyFeatureFlagController as AdminCompanyFeatureFlagController;
 use App\Http\Controllers\Api\Admin\CompanyModuleController as AdminCompanyModuleController;
+use App\Http\Controllers\Api\Admin\FeatureFlagController as AdminFeatureFlagController;
+use App\Http\Controllers\Api\Admin\ImpersonationController as AdminImpersonationController;
+use App\Http\Controllers\Api\Admin\InvoiceController as AdminInvoiceController;
 use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Api\Admin\PlatformStatsController;
+use App\Http\Controllers\Api\Admin\SecurityController as AdminSecurityController;
+use App\Http\Controllers\Api\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Api\Admin\SubscriptionPlanController as AdminSubscriptionPlanController;
+use App\Http\Controllers\Api\Admin\SupportTicketController as AdminSupportTicketController;
 use App\Http\Controllers\Api\AdvisorController;
+use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\CareerRoadmapController;
@@ -26,7 +36,9 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\DesignationController;
 use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\Api\FeatureFlagController;
 use App\Http\Controllers\Api\HolidayController;
+use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\LeaveRequestController;
 use App\Http\Controllers\Api\LeaveTypeController;
 use App\Http\Controllers\Api\Employee360Controller;
@@ -34,6 +46,8 @@ use App\Http\Controllers\Api\ModuleController;
 use App\Http\Controllers\Api\ResumeParserController;
 use App\Http\Controllers\Api\SkillController;
 use App\Http\Controllers\Api\SkillMatrixController;
+use App\Http\Controllers\Api\SupportTicketController;
+use App\Http\Controllers\Api\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -41,6 +55,7 @@ Route::prefix('v1')->group(function () {
     // Public
     Route::post('/auth/register-company', [AuthController::class, 'registerCompany']);
     Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/login/2fa', [AuthController::class, 'verifyTwoFactor']);
 
     // Protected
     Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
@@ -51,6 +66,18 @@ Route::prefix('v1')->group(function () {
         Route::get('/company', [CompanyController::class, 'show']);
         Route::put('/company', [CompanyController::class, 'update']);
         Route::patch('/company', [CompanyController::class, 'update']);
+
+        Route::get('/invoices', [InvoiceController::class, 'index']);
+        Route::get('/invoices/payment-details', [InvoiceController::class, 'paymentDetails']);
+        Route::post('/invoices/{invoice}/submit-payment', [InvoiceController::class, 'submitPayment']);
+
+        Route::get('/announcements/active', [AnnouncementController::class, 'active']);
+        Route::get('/feature-flags/active', [FeatureFlagController::class, 'active']);
+
+        Route::get('/support-tickets', [SupportTicketController::class, 'index']);
+        Route::post('/support-tickets', [SupportTicketController::class, 'store']);
+        Route::get('/support-tickets/{ticket}', [SupportTicketController::class, 'show']);
+        Route::post('/support-tickets/{ticket}/reply', [SupportTicketController::class, 'reply']);
 
         Route::apiResource('departments', DepartmentController::class);
         Route::apiResource('designations', DesignationController::class);
@@ -215,22 +242,60 @@ Route::prefix('v1')->group(function () {
 
     // Super admin only - platform management, not scoped to any tenant.
     Route::middleware(['auth:sanctum', 'super-admin'])->prefix('admin')->group(function () {
-        Route::get('/stats', [PlatformStatsController::class, 'index']);
-        Route::get('/activity-logs', [AdminActivityLogController::class, 'index']);
+        // Security-settings routes are deliberately NOT behind 'super-admin-ip'
+        // below, so a super admin can never lock themselves out of the one
+        // place that manages the IP allowlist or their own 2FA.
+        Route::get('/security/allowed-ips', [AdminSecurityController::class, 'index']);
+        Route::post('/security/allowed-ips', [AdminSecurityController::class, 'store']);
+        Route::delete('/security/allowed-ips/{allowedIp}', [AdminSecurityController::class, 'destroy']);
 
-        Route::get('/companies', [AdminCompanyController::class, 'index']);
-        Route::get('/companies/{company}', [AdminCompanyController::class, 'show']);
-        Route::patch('/companies/{company}', [AdminCompanyController::class, 'update']);
-        Route::post('/companies/{company}/approve', [AdminCompanyController::class, 'approve']);
-        Route::post('/companies/{company}/reject', [AdminCompanyController::class, 'reject']);
-        Route::get('/companies/{company}/modules', [AdminCompanyModuleController::class, 'index']);
-        Route::post('/companies/{company}/modules/reorder', [AdminCompanyModuleController::class, 'reorder']);
-        Route::patch('/companies/{company}/modules/{module}', [AdminCompanyModuleController::class, 'update']);
+        Route::get('/2fa/status', [TwoFactorController::class, 'status']);
+        Route::post('/2fa/setup', [TwoFactorController::class, 'setup']);
+        Route::post('/2fa/confirm', [TwoFactorController::class, 'confirm']);
+        Route::post('/2fa/disable', [TwoFactorController::class, 'disable']);
 
-        Route::apiResource('subscription-plans', AdminSubscriptionPlanController::class)
-            ->parameters(['subscription-plans' => 'subscriptionPlan'])
-            ->except(['show']);
+        Route::middleware('super-admin-ip')->group(function () {
+            Route::get('/stats', [PlatformStatsController::class, 'index']);
+            Route::get('/activity-logs', [AdminActivityLogController::class, 'index']);
 
-        Route::apiResource('modules', AdminModuleController::class)->except(['show']);
+            Route::get('/companies', [AdminCompanyController::class, 'index']);
+            Route::get('/companies/{company}', [AdminCompanyController::class, 'show']);
+            Route::patch('/companies/{company}', [AdminCompanyController::class, 'update']);
+            Route::post('/companies/{company}/approve', [AdminCompanyController::class, 'approve']);
+            Route::post('/companies/{company}/reject', [AdminCompanyController::class, 'reject']);
+            Route::post('/companies/{company}/impersonate', [AdminImpersonationController::class, 'start']);
+            Route::get('/companies/{company}/modules', [AdminCompanyModuleController::class, 'index']);
+            Route::post('/companies/{company}/modules/reorder', [AdminCompanyModuleController::class, 'reorder']);
+            Route::patch('/companies/{company}/modules/{module}', [AdminCompanyModuleController::class, 'update']);
+
+            Route::apiResource('subscription-plans', AdminSubscriptionPlanController::class)
+                ->parameters(['subscription-plans' => 'subscriptionPlan'])
+                ->except(['show']);
+
+            Route::apiResource('modules', AdminModuleController::class)->except(['show']);
+
+            Route::get('/settings', [AdminSettingController::class, 'index']);
+            Route::patch('/settings', [AdminSettingController::class, 'update']);
+
+            Route::get('/invoices', [AdminInvoiceController::class, 'index']);
+            Route::post('/companies/{company}/invoices', [AdminInvoiceController::class, 'store']);
+            Route::patch('/invoices/{invoice}', [AdminInvoiceController::class, 'update']);
+
+            Route::apiResource('announcements', AdminAnnouncementController::class)->except(['show']);
+
+            Route::get('/support-tickets', [AdminSupportTicketController::class, 'index']);
+            Route::get('/support-tickets/{ticket}', [AdminSupportTicketController::class, 'show']);
+            Route::post('/support-tickets/{ticket}/reply', [AdminSupportTicketController::class, 'reply']);
+            Route::patch('/support-tickets/{ticket}/status', [AdminSupportTicketController::class, 'updateStatus']);
+
+            Route::apiResource('feature-flags', AdminFeatureFlagController::class)
+                ->parameters(['feature-flags' => 'featureFlag'])
+                ->except(['show']);
+            Route::get('/companies/{company}/feature-flags', [AdminCompanyFeatureFlagController::class, 'index']);
+            Route::patch('/companies/{company}/feature-flags/{featureFlag}', [AdminCompanyFeatureFlagController::class, 'update']);
+
+            Route::get('/companies/{company}/export', [AdminCompanyDataController::class, 'export']);
+            Route::post('/companies/{company}/purge', [AdminCompanyDataController::class, 'purge']);
+        });
     });
 });

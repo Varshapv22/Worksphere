@@ -18,12 +18,16 @@ import {
   CreditCard,
   Eye,
   FileSearch,
+  Info,
+  TriangleAlert,
+  X,
   Gauge,
   Globe,
   History,
   LayoutDashboard,
   LineChart,
   LogOut,
+  Megaphone,
   Menu,
   Network,
   Palette,
@@ -37,7 +41,7 @@ import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useConfirm } from "@/lib/confirm";
 import { apiFetch } from "@/lib/api";
-import type { Module } from "@/lib/types";
+import type { ActiveAnnouncement, Module } from "@/lib/types";
 import { ModulesContext } from "@/lib/modulesContext";
 import { Drawer } from "@/components/Drawer";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -74,6 +78,7 @@ const tenantNavItems: NavItem[] = [
   { href: "/payroll-simulator", label: "Payroll Simulator", icon: Wallet,          employeeVisible: false },
   { href: "/payroll-config",    label: "Payroll Config",    icon: Globe,           employeeVisible: false },
   { href: "/developer",         label: "Developer API",     icon: Code2,           employeeVisible: false },
+  { href: "/billing",           label: "Billing",           icon: Wallet,          employeeVisible: false },
   { href: "/settings/branding", label: "Branding",          icon: Palette,         employeeVisible: false },
 ];
 
@@ -82,6 +87,9 @@ const superAdminNavItems: NavItem[] = [
   { href: "/admin/companies", label: "Companies",          icon: Building2 },
   { href: "/admin/plans",     label: "Plans",              icon: CreditCard },
   { href: "/admin/modules",   label: "Modules",            icon: Blocks },
+  { href: "/admin/billing",   label: "Billing",            icon: Wallet },
+  { href: "/admin/announcements", label: "Announcements",  icon: Megaphone },
+  { href: "/admin/security",  label: "Security",           icon: ShieldCheck },
   { href: "/admin/activity-log", label: "Activity Log",    icon: History },
 ];
 
@@ -146,13 +154,15 @@ function NavLinks({
 }
 
 export function DashboardShell({ children }: { children: ReactNode }) {
-  const { user, company, loading, logout } = useAuth();
+  const { user, company, loading, logout, impersonating, exitImpersonation } = useAuth();
   const confirm = useConfirm();
   const pathname = usePathname();
   const router = useRouter();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [enabledModuleSlugs, setEnabledModuleSlugs] = useState<Set<string> | null>(null);
   const [viewAsEmployee, setViewAsEmployee] = useState(false);
+  const [announcements, setAnnouncements] = useState<ActiveAnnouncement[]>([]);
+  const [dismissedAnnouncementIds, setDismissedAnnouncementIds] = useState<Set<number>>(new Set());
 
   const isSuperAdmin = Boolean(user?.is_super_admin);
   const inAdminArea = pathname.startsWith("/admin");
@@ -170,6 +180,31 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     if (!ok) return;
     await logout();
     router.push("/login");
+  }
+
+  useEffect(() => {
+    if (isSuperAdmin || !user) return;
+    try {
+      const raw = localStorage.getItem("dismissedAnnouncementIds");
+      if (raw) setDismissedAnnouncementIds(new Set(JSON.parse(raw)));
+    } catch {
+      // ignore malformed/unavailable storage
+    }
+    apiFetch<{ data: ActiveAnnouncement[] }>("/announcements/active")
+      .then((res) => setAnnouncements(res.data))
+      .catch(() => {});
+  }, [isSuperAdmin, user]);
+
+  function dismissAnnouncement(id: number) {
+    setDismissedAnnouncementIds((prev) => {
+      const next = new Set(prev).add(id);
+      try {
+        localStorage.setItem("dismissedAnnouncementIds", JSON.stringify([...next]));
+      } catch {
+        // ignore unavailable storage
+      }
+      return next;
+    });
   }
 
   useEffect(() => {
@@ -297,6 +332,25 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
+        {impersonating && (
+          <div className="flex items-center justify-between gap-3 border-b border-warning-100 bg-warning-50 px-4 py-2 text-sm text-warning-700 sm:px-6">
+            <span className="flex items-center gap-2">
+              <Eye className="size-4 shrink-0" aria-hidden="true" />
+              Impersonating <span className="font-semibold">{impersonating}</span> — actions you take are logged.
+            </span>
+            <button
+              type="button"
+              onClick={async () => {
+                await exitImpersonation();
+                router.push("/admin");
+              }}
+              className="shrink-0 font-medium underline-offset-2 hover:underline"
+            >
+              Exit
+            </button>
+          </div>
+        )}
+
         {viewAsEmployee && (
           <div className="flex items-center justify-between gap-3 border-b border-brand-200 bg-brand-50 px-4 py-2 text-sm text-brand-800 dark:border-brand-900/40 dark:bg-brand-900/20 dark:text-brand-300 sm:px-6">
             <span className="flex items-center gap-2">
@@ -312,6 +366,39 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             </button>
           </div>
         )}
+
+        {announcements
+          .filter((a) => !dismissedAnnouncementIds.has(a.id))
+          .map((a) => {
+            const styles =
+              a.level === "critical"
+                ? "border-danger-200 bg-danger-50 text-danger-800"
+                : a.level === "warning"
+                  ? "border-warning-100 bg-warning-50 text-warning-700"
+                  : "border-info-100 bg-info-50 text-info-700";
+            return (
+              <div key={a.id} className={cn("flex items-start justify-between gap-3 border-b px-4 py-2.5 text-sm sm:px-6", styles)}>
+                <span className="flex items-start gap-2">
+                  {a.level === "info" ? (
+                    <Info className="size-4 shrink-0 mt-0.5" aria-hidden="true" />
+                  ) : (
+                    <TriangleAlert className="size-4 shrink-0 mt-0.5" aria-hidden="true" />
+                  )}
+                  <span>
+                    <span className="font-semibold">{a.title}</span> — {a.body}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => dismissAnnouncement(a.id)}
+                  className="shrink-0 rounded-sm p-0.5 hover:bg-black/5 dark:hover:bg-white/10"
+                  aria-label="Dismiss"
+                >
+                  <X className="size-4" aria-hidden="true" />
+                </button>
+              </div>
+            );
+          })}
 
         <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>

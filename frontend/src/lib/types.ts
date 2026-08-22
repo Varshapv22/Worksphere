@@ -180,6 +180,10 @@ export interface AdminCompany {
   name: string;
   slug: string;
   email: string;
+  phone: string | null;
+  address: string | null;
+  timezone: string;
+  currency: string;
   is_active: boolean;
   status: CompanyStatus;
   trial_ends_at: string | null;
@@ -193,6 +197,100 @@ export interface AdminCompany {
   } | null;
   usage_percent: number | null;
   created_at: string;
+}
+
+export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
+export type TicketPriority = "low" | "normal" | "high" | "urgent";
+
+export interface SupportTicketMessage {
+  id: number;
+  body: string;
+  user: { id: number; name: string; is_super_admin: boolean } | null;
+  created_at: string;
+}
+
+export interface SupportTicket {
+  id: number;
+  subject: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  company?: { id: number; name: string } | null;
+  created_by: { id: number; name: string } | null;
+  messages?: SupportTicketMessage[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeatureFlag {
+  id: number;
+  key: string;
+  label: string;
+  description: string | null;
+  is_enabled_globally: boolean;
+  created_at: string;
+}
+
+export interface CompanyFeatureFlag {
+  id: number;
+  key: string;
+  label: string;
+  description: string | null;
+  is_enabled_globally: boolean;
+  has_override: boolean;
+  is_enabled: boolean;
+}
+
+export interface AllowedIp {
+  id: number;
+  ip_address: string;
+  label: string | null;
+  created_at: string;
+}
+
+export type AnnouncementLevel = "info" | "warning" | "critical";
+export type AnnouncementAudience = "all" | "specific";
+
+export interface AdminAnnouncement {
+  id: number;
+  title: string;
+  body: string;
+  level: AnnouncementLevel;
+  audience_type: AnnouncementAudience;
+  company_ids?: number[];
+  starts_at: string | null;
+  ends_at: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ActiveAnnouncement {
+  id: number;
+  title: string;
+  body: string;
+  level: AnnouncementLevel;
+}
+
+export type InvoiceStatus = "pending" | "submitted" | "paid" | "overdue" | "cancelled";
+
+export interface Invoice {
+  id: number;
+  amount: string | number;
+  currency: string;
+  period_start: string;
+  period_end: string;
+  status: InvoiceStatus;
+  upi_reference: string | null;
+  submitted_at: string | null;
+  paid_at: string | null;
+  notes: string | null;
+  company?: { id: number; name: string } | null;
+  subscription_plan: { id: number; name: string } | null;
+  created_at: string;
+}
+
+export interface PlatformSettings {
+  upi_id: string | null;
+  upi_payee_name: string | null;
 }
 
 export interface Module {
@@ -663,12 +761,22 @@ export interface PlatformStats {
   };
   employees: { total: number };
   users: { total: number };
-  revenue: { mrr: number; arr: number };
+  revenue: {
+    mrr: number;
+    arr: number;
+    by_plan: Array<{ plan_id: number; plan_name: string; company_count: number; mrr: number }>;
+  };
   companies_near_limit: Array<{
     id: number;
     name: string;
     employee_count: number;
     max_employees: number;
     usage_percent: number;
+  }>;
+  trial_ending_soon: Array<{
+    id: number;
+    name: string;
+    trial_ends_at: string;
+    days_left: number;
   }>;
 }
