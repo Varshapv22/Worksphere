@@ -1,13 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Gift, ListChecks, Plus, Trash2, X } from "lucide-react";
+import {
+  CalendarDays,
+  CalendarPlus,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Gift,
+  ListChecks,
+  Plus,
+  Trash2,
+  Wallet,
+  X,
+} from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useViewAsEmployee } from "@/lib/viewAsEmployeeContext";
 import { useToast } from "@/lib/toast";
-import type { Holiday, LeaveRequest, LeaveStatus, LeaveType, Paginated } from "@/lib/types";
+import type { Holiday, LeaveBalanceSummary, LeaveRequest, LeaveStatus, LeaveType, Paginated } from "@/lib/types";
 import { Card } from "@/components/Card";
+import { StatCard } from "@/components/StatCard";
 import { Input } from "@/components/Input";
 import { Textarea } from "@/components/Textarea";
 import { Select } from "@/components/Select";
@@ -253,6 +266,7 @@ export default function LeavePage() {
   const [holidayError, setHolidayError] = useState<string | null>(null);
   const [addingHoliday, setAddingHoliday] = useState(false);
   const [teamEmployeeFilter, setTeamEmployeeFilter] = useState("");
+  const [balanceSummary, setBalanceSummary] = useState<LeaveBalanceSummary | null>(null);
   const toast = useToast();
 
   // Managers/admins land straight on the whole team's leave requests -
@@ -304,6 +318,15 @@ export default function LeavePage() {
   useEffect(() => {
     loadHolidays();
   }, [loadHolidays]);
+
+  useEffect(() => {
+    if (showTeam) return;
+    apiFetch<LeaveBalanceSummary>("/leave-balances/me")
+      .then(setBalanceSummary)
+      .catch(() => {
+        // Non-fatal — the balance tiles just stay hidden.
+      });
+  }, [showTeam]);
 
   const holidaysByDate = useMemo(() => {
     const map = new Map<string, Holiday>();
@@ -469,6 +492,15 @@ export default function LeavePage() {
             : "Request time off and track your own requests"
         }
       />
+
+      {!showTeam && balanceSummary && (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatCard label="Total leaves" value={balanceSummary.total_allocated} icon={Wallet} />
+          <StatCard label="Leaves taken" value={balanceSummary.total_used} icon={CalendarPlus} />
+          <StatCard label="Remaining" value={balanceSummary.total_remaining} icon={CalendarDays} />
+          <StatCard label="Carry forward" value={balanceSummary.total_carry_forward} icon={ListChecks} />
+        </div>
+      )}
 
       {!showTeam && (
         <Tabs

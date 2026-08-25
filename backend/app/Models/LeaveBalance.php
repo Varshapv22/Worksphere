@@ -18,6 +18,7 @@ class LeaveBalance extends Model
         'year',
         'allocated',
         'used',
+        'carry_forward',
     ];
 
     protected function casts(): array
@@ -26,6 +27,7 @@ class LeaveBalance extends Model
             'year' => 'integer',
             'allocated' => 'decimal:1',
             'used' => 'decimal:1',
+            'carry_forward' => 'decimal:1',
         ];
     }
 
@@ -46,6 +48,6 @@ class LeaveBalance extends Model
 
     public function getRemainingAttribute(): float
     {
-        return (float) $this->allocated - (float) $this->used;
+        return (float) $this->allocated + (float) $this->carry_forward - (float) $this->used;
     }
 }

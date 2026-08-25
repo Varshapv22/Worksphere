@@ -13,7 +13,10 @@ class ResumeParserController extends Controller
 {
     public function index(Request $request)
     {
+        abort_unless($request->user()->can('employees.manage'), 403, 'Only a company admin can view parsed resumes.');
+
         $resumes = ParsedResume::query()
+            ->where('company_id', $request->user()->company_id)
             ->orderByDesc('created_at')
             ->paginate($request->integer('per_page', 15));
 
@@ -30,6 +33,8 @@ class ResumeParserController extends Controller
 
     public function store(Request $request)
     {
+        abort_unless($request->user()->can('employees.manage'), 403, 'Only a company admin can parse resumes.');
+
         $request->validate([
             'file' => ['required', 'file', 'mimes:pdf', 'max:10240'],
         ]);
@@ -86,13 +91,19 @@ class ResumeParserController extends Controller
         return response()->json(['data' => $this->toResource($resume->fresh())], 201);
     }
 
-    public function show(ParsedResume $parsedResume)
+    public function show(Request $request, ParsedResume $parsedResume)
     {
+        abort_unless($request->user()->can('employees.manage'), 403, 'Only a company admin can view parsed resumes.');
+        abort_unless($parsedResume->company_id === $request->user()->company_id, 404);
+
         return response()->json(['data' => $this->toResource($parsedResume)]);
     }
 
-    public function destroy(ParsedResume $parsedResume)
+    public function destroy(Request $request, ParsedResume $parsedResume)
     {
+        abort_unless($request->user()->can('employees.manage'), 403, 'Only a company admin can delete parsed resumes.');
+        abort_unless($parsedResume->company_id === $request->user()->company_id, 404);
+
         $parsedResume->delete();
 
         return response()->json(null, 204);

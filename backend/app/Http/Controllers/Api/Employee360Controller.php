@@ -64,7 +64,8 @@ class Employee360Controller extends Controller
                     'year'       => $b->year,
                     'allocated'  => (float) $b->allocated,
                     'used'       => (float) $b->used,
-                    'remaining'  => (float) $b->allocated - (float) $b->used,
+                    'carry_forward' => (float) $b->carry_forward,
+                    'remaining'  => (float) $b->allocated + (float) $b->carry_forward - (float) $b->used,
                 ]),
                 'recent' => $employee->leaveRequests->map(fn ($r) => [
                     'id'         => $r->id,
@@ -174,7 +175,7 @@ class Employee360Controller extends Controller
 
     public function storeNote(Request $request, Employee $employee)
     {
-        $this->authorize('view', $employee);
+        $this->authorize('update', $employee);
         $validated = $request->validate([
             'body' => ['required', 'string'],
             'type' => ['sometimes', 'in:general,hr,performance'],
@@ -197,7 +198,7 @@ class Employee360Controller extends Controller
 
     public function destroyNote(Employee $employee, EmployeeNote $note)
     {
-        $this->authorize('view', $employee);
+        $this->authorize('update', $employee);
         abort_if($note->employee_id !== $employee->id, 404);
         $note->delete();
         return response()->noContent();
@@ -207,7 +208,7 @@ class Employee360Controller extends Controller
 
     public function storeProject(Request $request, Employee $employee)
     {
-        $this->authorize('view', $employee);
+        $this->authorize('update', $employee);
         $validated = $request->validate([
             'project_name' => ['required', 'string', 'max:255'],
             'role'         => ['nullable', 'string', 'max:255'],
@@ -231,7 +232,7 @@ class Employee360Controller extends Controller
 
     public function destroyProject(Employee $employee, EmployeeProject $project)
     {
-        $this->authorize('view', $employee);
+        $this->authorize('update', $employee);
         abort_if($project->employee_id !== $employee->id, 404);
         $project->delete();
         return response()->noContent();
@@ -241,7 +242,7 @@ class Employee360Controller extends Controller
 
     public function storeAsset(Request $request, Employee $employee)
     {
-        $this->authorize('view', $employee);
+        $this->authorize('update', $employee);
         $validated = $request->validate([
             'name'          => ['required', 'string', 'max:255'],
             'type'          => ['nullable', 'string', 'max:100'],
@@ -263,7 +264,7 @@ class Employee360Controller extends Controller
 
     public function destroyAsset(Employee $employee, EmployeeAsset $asset)
     {
-        $this->authorize('view', $employee);
+        $this->authorize('update', $employee);
         abort_if($asset->employee_id !== $employee->id, 404);
         $asset->delete();
         return response()->noContent();
@@ -273,7 +274,7 @@ class Employee360Controller extends Controller
 
     public function storeTraining(Request $request, Employee $employee)
     {
-        $this->authorize('view', $employee);
+        $this->authorize('update', $employee);
         $validated = $request->validate([
             'course_name'    => ['required', 'string', 'max:255'],
             'provider'       => ['nullable', 'string', 'max:255'],
@@ -294,7 +295,7 @@ class Employee360Controller extends Controller
 
     public function destroyTraining(Employee $employee, EmployeeTraining $training)
     {
-        $this->authorize('view', $employee);
+        $this->authorize('update', $employee);
         abort_if($training->employee_id !== $employee->id, 404);
         $training->delete();
         return response()->noContent();
@@ -304,7 +305,7 @@ class Employee360Controller extends Controller
 
     public function storeCertificate(Request $request, Employee $employee)
     {
-        $this->authorize('view', $employee);
+        $this->authorize('update', $employee);
         $validated = $request->validate([
             'name'        => ['required', 'string', 'max:255'],
             'issuer'      => ['nullable', 'string', 'max:255'],
@@ -325,7 +326,7 @@ class Employee360Controller extends Controller
 
     public function destroyCertificate(Employee $employee, EmployeeCertificate $certificate)
     {
-        $this->authorize('view', $employee);
+        $this->authorize('update', $employee);
         abort_if($certificate->employee_id !== $employee->id, 404);
         $certificate->delete();
         return response()->noContent();
@@ -335,7 +336,7 @@ class Employee360Controller extends Controller
 
     public function storeDocument(Request $request, Employee $employee)
     {
-        $this->authorize('view', $employee);
+        $this->authorize('update', $employee);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:100'],
@@ -355,7 +356,7 @@ class Employee360Controller extends Controller
 
     public function destroyDocument(Employee $employee, EmployeeDocument $document)
     {
-        $this->authorize('view', $employee);
+        $this->authorize('update', $employee);
         abort_if($document->employee_id !== $employee->id, 404);
         $document->delete();
         return response()->noContent();

@@ -12,6 +12,8 @@ class WhiteLabelController extends Controller
 {
     public function show(Request $request): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage branding.');
+
         $config = WhiteLabelConfig::firstOrNew(
             ['company_id' => $request->user()->company_id]
         );
@@ -21,6 +23,8 @@ class WhiteLabelController extends Controller
 
     public function update(Request $request): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage branding.');
+
         $data = $request->validate([
             'app_name'        => ['nullable', 'string', 'max:100'],
             'logo_url'        => ['nullable', 'url', 'max:500'],

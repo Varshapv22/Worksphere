@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\FeatureFlagController;
 use App\Http\Controllers\Api\HolidayController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\LeaveRequestController;
+use App\Http\Controllers\Api\LeaveBalanceController;
 use App\Http\Controllers\Api\LeaveTypeController;
 use App\Http\Controllers\Api\Employee360Controller;
 use App\Http\Controllers\Api\ModuleController;
@@ -105,6 +106,8 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::apiResource('leave-types', LeaveTypeController::class);
+
+        Route::get('/leave-balances/me', [LeaveBalanceController::class, 'me']);
 
         Route::apiResource('leave-requests', LeaveRequestController::class)
             ->only(['index', 'store', 'show']);

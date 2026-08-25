@@ -14,8 +14,19 @@ use Illuminate\Support\Facades\DB;
 
 class AnalyticsController extends Controller
 {
+    private function assertCanViewAnalytics(Request $request): void
+    {
+        abort_unless(
+            $request->user()->can('departments.manage') || $request->user()->can('attendance.manage'),
+            403,
+            'Only a manager or company admin can view analytics.'
+        );
+    }
+
     public function overview(Request $request): JsonResponse
     {
+        $this->assertCanViewAnalytics($request);
+
         $companyId = $request->user()->company_id;
         $now = now();
 
@@ -93,6 +104,8 @@ class AnalyticsController extends Controller
 
     public function hiringTrends(Request $request): JsonResponse
     {
+        $this->assertCanViewAnalytics($request);
+
         $companyId = $request->user()->company_id;
 
         $trends = Employee::where('company_id', $companyId)
@@ -108,6 +121,8 @@ class AnalyticsController extends Controller
 
     public function attrition(Request $request): JsonResponse
     {
+        $this->assertCanViewAnalytics($request);
+
         $companyId = $request->user()->company_id;
 
         $attrition = Employee::where('company_id', $companyId)
@@ -123,6 +138,8 @@ class AnalyticsController extends Controller
 
     public function departmentBreakdown(Request $request): JsonResponse
     {
+        $this->assertCanViewAnalytics($request);
+
         $companyId = $request->user()->company_id;
 
         $breakdown = Employee::where('employees.company_id', $companyId)
@@ -145,6 +162,8 @@ class AnalyticsController extends Controller
 
     public function payrollTrends(Request $request): JsonResponse
     {
+        $this->assertCanViewAnalytics($request);
+
         $companyId = $request->user()->company_id;
 
         $trends = Payroll::where('company_id', $companyId)

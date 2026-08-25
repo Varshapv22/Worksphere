@@ -76,6 +76,25 @@ export interface LeaveType {
 
 export type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
 
+export interface LeaveBalanceBreakdown {
+  leave_type_id: number;
+  leave_type: string;
+  year: number;
+  allocated: number;
+  used: number;
+  carry_forward: number;
+  remaining: number;
+}
+
+export interface LeaveBalanceSummary {
+  year: number;
+  total_allocated: number;
+  total_carry_forward: number;
+  total_used: number;
+  total_remaining: number;
+  breakdown: LeaveBalanceBreakdown[];
+}
+
 export interface LeaveRequest {
   id: number;
   employee?: { id: number; full_name: string; employee_code: string } | null;

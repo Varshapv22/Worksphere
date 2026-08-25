@@ -16,6 +16,8 @@ class DeveloperApiController extends Controller
 
     public function listKeys(Request $request): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage API keys.');
+
         $keys = ApiKey::where('company_id', $request->user()->company_id)
             ->orderByDesc('created_at')
             ->get()
@@ -26,6 +28,8 @@ class DeveloperApiController extends Controller
 
     public function createKey(Request $request): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage API keys.');
+
         $data = $request->validate([
             'name'       => ['required', 'string', 'max:100'],
             'scopes'     => ['nullable', 'array'],
@@ -51,6 +55,9 @@ class DeveloperApiController extends Controller
 
     public function updateKey(Request $request, ApiKey $apiKey): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage API keys.');
+        abort_unless($apiKey->company_id === $request->user()->company_id, 404);
+
         $data = $request->validate([
             'name'      => ['sometimes', 'string', 'max:100'],
             'scopes'    => ['nullable', 'array'],
@@ -62,8 +69,11 @@ class DeveloperApiController extends Controller
         return response()->json(['data' => $this->keyResource($apiKey)]);
     }
 
-    public function revokeKey(ApiKey $apiKey): JsonResponse
+    public function revokeKey(Request $request, ApiKey $apiKey): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage API keys.');
+        abort_unless($apiKey->company_id === $request->user()->company_id, 404);
+
         $apiKey->delete();
         return response()->json(null, 204);
     }
@@ -72,6 +82,8 @@ class DeveloperApiController extends Controller
 
     public function listWebhooks(Request $request): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage webhooks.');
+
         $webhooks = Webhook::where('company_id', $request->user()->company_id)
             ->orderByDesc('created_at')
             ->get()
@@ -82,6 +94,8 @@ class DeveloperApiController extends Controller
 
     public function createWebhook(Request $request): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage webhooks.');
+
         $data = $request->validate([
             'name'   => ['required', 'string', 'max:100'],
             'url'    => ['required', 'url', 'max:500'],
@@ -106,6 +120,9 @@ class DeveloperApiController extends Controller
 
     public function updateWebhook(Request $request, Webhook $webhook): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage webhooks.');
+        abort_unless($webhook->company_id === $request->user()->company_id, 404);
+
         $data = $request->validate([
             'name'      => ['sometimes', 'string', 'max:100'],
             'url'       => ['sometimes', 'url', 'max:500'],
@@ -118,8 +135,11 @@ class DeveloperApiController extends Controller
         return response()->json(['data' => $this->webhookResource($webhook)]);
     }
 
-    public function deleteWebhook(Webhook $webhook): JsonResponse
+    public function deleteWebhook(Request $request, Webhook $webhook): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage webhooks.');
+        abort_unless($webhook->company_id === $request->user()->company_id, 404);
+
         $webhook->delete();
         return response()->json(null, 204);
     }

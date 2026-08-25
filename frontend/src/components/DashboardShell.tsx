@@ -171,6 +171,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const canViewAsEmployee = Boolean(
     user?.roles?.includes("company-admin") || user?.roles?.includes("manager")
   );
+  // A real plain-employee account (no company-admin/manager role) always
+  // gets the restricted, employee-only view of the sidebar — not just when
+  // an admin/manager has manually toggled the "View as Employee" preview.
+  const isPlainEmployee = !isSuperAdmin && Boolean(user) && !canViewAsEmployee;
+  const effectiveEmployeeView = isPlainEmployee || viewAsEmployee;
 
   async function handleLogout() {
     const ok = await confirm({
@@ -233,12 +238,15 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const navItems = (isSuperAdmin ? superAdminNavItems : tenantNavItems).filter((item) => {
     const requiredSlug = moduleGatedRoutes[item.href];
     if (requiredSlug && enabledModuleSlugs && !enabledModuleSlugs.has(requiredSlug)) return false;
-    if (viewAsEmployee && item.employeeVisible === false) return false;
+    if (effectiveEmployeeView && item.employeeVisible === false) return false;
     return true;
   });
 
+  // Bounces a plain employee (or an admin/manager previewing as one) off an
+  // admin-only page reached by direct URL — not just one they got to via a
+  // sidebar link that's since disappeared.
   useEffect(() => {
-    if (!viewAsEmployee) return;
+    if (!effectiveEmployeeView) return;
     const stillVisible = navItems.some((item) =>
       item.href === "/admin" ? pathname === item.href : pathname.startsWith(item.href)
     );
@@ -247,7 +255,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     // dependency list, so it's intentionally left out to avoid re-running on
     // every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewAsEmployee, pathname, router]);
+  }, [effectiveEmployeeView, pathname, router]);
 
   if (loading) {
     return (

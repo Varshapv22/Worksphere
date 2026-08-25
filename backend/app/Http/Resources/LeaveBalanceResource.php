@@ -18,7 +18,8 @@ class LeaveBalanceResource extends JsonResource
             'year' => $this->year,
             'allocated' => (float) $this->allocated,
             'used' => (float) $this->used,
-            'remaining' => (float) $this->allocated - (float) $this->used,
+            'carry_forward' => (float) $this->carry_forward,
+            'remaining' => (float) $this->allocated + (float) $this->carry_forward - (float) $this->used,
         ];
     }
 }

@@ -48,6 +48,8 @@ class ModuleController extends Controller
      */
     public function toggle(Request $request, Module $module)
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage modules.');
+
         $validated = $request->validate([
             'is_enabled' => ['required', 'boolean'],
         ]);

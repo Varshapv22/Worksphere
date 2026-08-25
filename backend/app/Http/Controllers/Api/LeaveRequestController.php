@@ -82,7 +82,7 @@ class LeaveRequestController extends Controller
                 ]
             );
 
-            $remaining = (float) $balance->allocated - (float) $balance->used;
+            $remaining = (float) $balance->allocated + (float) $balance->carry_forward - (float) $balance->used;
 
             if ((float) $validated['days'] > $remaining) {
                 throw ValidationException::withMessages([

@@ -13,6 +13,12 @@ class PayrollSimulatorController extends Controller
 {
     public function simulate(Request $request): JsonResponse
     {
+        abort_unless(
+            $request->user()->can('departments.manage') || $request->user()->can('attendance.manage'),
+            403,
+            'Only a manager or company admin can use the payroll simulator.'
+        );
+
         $data = $request->validate([
             'employee_id'         => ['required', 'integer', 'exists:employees,id'],
             'new_basic_salary'    => ['required', 'numeric', 'min:0'],
@@ -89,6 +95,12 @@ class PayrollSimulatorController extends Controller
 
     public function bulkSimulate(Request $request): JsonResponse
     {
+        abort_unless(
+            $request->user()->can('departments.manage') || $request->user()->can('attendance.manage'),
+            403,
+            'Only a manager or company admin can use the payroll simulator.'
+        );
+
         $data = $request->validate([
             'department_id'       => ['nullable', 'integer', 'exists:departments,id'],
             'increase_pct'        => ['required', 'numeric', 'min:-100', 'max:200'],

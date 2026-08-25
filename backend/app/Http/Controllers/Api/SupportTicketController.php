@@ -11,12 +11,14 @@ use Illuminate\Validation\Rule;
 class SupportTicketController extends Controller
 {
     /**
-     * This company's own support tickets.
+     * The signed-in user's own support tickets — not the whole company's,
+     * so co-workers can't read each other's support conversations.
      */
     public function index(Request $request)
     {
         $tickets = $request->user()->company
             ->supportTickets()
+            ->where('created_by', $request->user()->id)
             ->with('createdBy')
             ->orderByDesc('updated_at')
             ->paginate($request->integer('per_page', 20));
@@ -26,7 +28,10 @@ class SupportTicketController extends Controller
 
     public function show(Request $request, SupportTicket $ticket)
     {
-        abort_unless($ticket->company_id === $request->user()->company_id, 403);
+        abort_unless(
+            $ticket->company_id === $request->user()->company_id && $ticket->created_by === $request->user()->id,
+            403
+        );
 
         return new SupportTicketResource($ticket->load(['createdBy', 'messages.user']));
     }
@@ -56,7 +61,10 @@ class SupportTicketController extends Controller
 
     public function reply(Request $request, SupportTicket $ticket)
     {
-        abort_unless($ticket->company_id === $request->user()->company_id, 403);
+        abort_unless(
+            $ticket->company_id === $request->user()->company_id && $ticket->created_by === $request->user()->id,
+            403
+        );
 
         $validated = $request->validate(['body' => ['required', 'string']]);
 

@@ -63,6 +63,8 @@ class OrgChartController extends Controller
 
     public function updateManager(Employee $employee, Request $request): JsonResponse
     {
+        $this->authorize('update', $employee);
+
         $validated = $request->validate([
             'manager_id' => 'nullable|integer',
         ]);
@@ -71,7 +73,7 @@ class OrgChartController extends Controller
 
         if ($newManagerId !== null) {
             // Ensure proposed manager belongs to the same tenant
-            if (! Employee::where('id', $newManagerId)->exists()) {
+            if (! Employee::where('id', $newManagerId)->where('company_id', $employee->company_id)->exists()) {
                 return response()->json(['message' => 'Manager not found.'], 422);
             }
 

@@ -12,6 +12,8 @@ class PayrollConfigController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can view payroll configuration.');
+
         $configs = PayrollConfig::where('company_id', $request->user()->company_id)
             ->orderBy('country_name')
             ->get();
@@ -21,6 +23,8 @@ class PayrollConfigController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage payroll configuration.');
+
         $data = $request->validate([
             'country_code'        => ['required', 'string', 'max:3'],
             'country_name'        => ['required', 'string', 'max:100'],
@@ -43,6 +47,9 @@ class PayrollConfigController extends Controller
 
     public function update(Request $request, PayrollConfig $payrollConfig): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage payroll configuration.');
+        abort_unless($payrollConfig->company_id === $request->user()->company_id, 404);
+
         $data = $request->validate([
             'country_name'        => ['sometimes', 'string', 'max:100'],
             'currency_code'       => ['sometimes', 'string', 'max:3'],
@@ -61,8 +68,11 @@ class PayrollConfigController extends Controller
         return response()->json(['data' => $payrollConfig]);
     }
 
-    public function destroy(PayrollConfig $payrollConfig): JsonResponse
+    public function destroy(Request $request, PayrollConfig $payrollConfig): JsonResponse
     {
+        abort_unless($request->user()->hasRole('company-admin'), 403, 'Only a company admin can manage payroll configuration.');
+        abort_unless($payrollConfig->company_id === $request->user()->company_id, 404);
+
         $payrollConfig->delete();
         return response()->json(null, 204);
     }

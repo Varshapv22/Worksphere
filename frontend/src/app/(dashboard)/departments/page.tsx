@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useViewAsEmployee } from "@/lib/viewAsEmployeeContext";
 import { useToast } from "@/lib/toast";
 import { useConfirm } from "@/lib/confirm";
 import type { Department, Paginated } from "@/lib/types";
@@ -14,6 +16,9 @@ import { Modal } from "@/components/Modal";
 import { PageHeader } from "@/components/PageHeader";
 
 export default function DepartmentsPage() {
+  const { user } = useAuth();
+  const viewingAsEmployee = useViewAsEmployee();
+  const canManageDepartments = Boolean(user?.permissions?.includes("departments.manage")) && !viewingAsEmployee;
   const toast = useToast();
   const confirm = useConfirm();
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -57,26 +62,29 @@ export default function DepartmentsPage() {
     {
       header: "Actions",
       className: "w-32",
-      accessor: (d) => (
-        <div className="flex gap-3">
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded-sm text-brand-700 transition-colors hover:text-brand-800 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-            onClick={() => setModalDept(d)}
-          >
-            <Pencil className="size-3.5" aria-hidden="true" />
-            Edit
-          </button>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded-sm text-danger-600 transition-colors hover:text-danger-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger-600"
-            onClick={() => handleDelete(d.id)}
-          >
-            <Trash2 className="size-3.5" aria-hidden="true" />
-            Delete
-          </button>
-        </div>
-      ),
+      accessor: (d) =>
+        canManageDepartments ? (
+          <div className="flex gap-3">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-sm text-brand-700 transition-colors hover:text-brand-800 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+              onClick={() => setModalDept(d)}
+            >
+              <Pencil className="size-3.5" aria-hidden="true" />
+              Edit
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-sm text-danger-600 transition-colors hover:text-danger-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger-600"
+              onClick={() => handleDelete(d.id)}
+            >
+              <Trash2 className="size-3.5" aria-hidden="true" />
+              Delete
+            </button>
+          </div>
+        ) : (
+          <span className="text-gray-400">—</span>
+        ),
     },
   ];
 
@@ -86,10 +94,12 @@ export default function DepartmentsPage() {
         title="Departments"
         description="Organize your company into departments"
         actions={
-          <Button onClick={() => setModalDept(null)}>
-            <Plus className="size-4" aria-hidden="true" />
-            Add department
-          </Button>
+          canManageDepartments && (
+            <Button onClick={() => setModalDept(null)}>
+              <Plus className="size-4" aria-hidden="true" />
+              Add department
+            </Button>
+          )
         }
       />
       <Card>
