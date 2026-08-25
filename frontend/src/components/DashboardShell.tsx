@@ -23,6 +23,7 @@ import {
   X,
   Gauge,
   Globe,
+  HelpCircle,
   History,
   LayoutDashboard,
   LineChart,
@@ -43,6 +44,7 @@ import { useConfirm } from "@/lib/confirm";
 import { apiFetch } from "@/lib/api";
 import type { ActiveAnnouncement, Module } from "@/lib/types";
 import { ModulesContext } from "@/lib/modulesContext";
+import { ViewAsEmployeeContext } from "@/lib/viewAsEmployeeContext";
 import { Drawer } from "@/components/Drawer";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -321,6 +323,17 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-3">
+            <Link
+              href="/manual"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+              aria-label="Open the user manual"
+              title="User manual"
+            >
+              <HelpCircle className="size-5" aria-hidden="true" />
+            </Link>
+
             {/* Theme toggle */}
             <ThemeToggle />
 
@@ -400,7 +413,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             );
           })}
 
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+        <main className="flex-1 p-4 sm:p-6">
+          <ViewAsEmployeeContext.Provider value={viewAsEmployee}>{children}</ViewAsEmployeeContext.Provider>
+        </main>
       </div>
     </div>
     </ModulesContext.Provider>

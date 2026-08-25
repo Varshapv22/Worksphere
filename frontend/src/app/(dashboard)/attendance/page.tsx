@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, LogIn, LogOut, Users } from "lucide-react";
+import { CheckCircle2, LogIn, LogOut } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useViewAsEmployee } from "@/lib/viewAsEmployeeContext";
 import { useToast } from "@/lib/toast";
 import { useConfirm } from "@/lib/confirm";
 import type { AttendanceRecord, Paginated } from "@/lib/types";
@@ -13,30 +14,29 @@ import { Select } from "@/components/Select";
 import { Table, type Column } from "@/components/Table";
 import { Badge } from "@/components/Badge";
 import { PageHeader } from "@/components/PageHeader";
-import { Tabs } from "@/components/Tabs";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
-type AttendanceTab = "mine" | "team";
-
 export default function AttendancePage() {
   const { user } = useAuth();
+  const viewingAsEmployee = useViewAsEmployee();
   const toast = useToast();
   const confirm = useConfirm();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<AttendanceTab>("mine");
   const [teamEmployeeFilter, setTeamEmployeeFilter] = useState("");
 
-  // Only managers/admins get team-wide records back from the API at all -
-  // for a plain employee this is always false and the Team tab stays hidden.
-  const canViewTeam = Boolean(
-    user?.permissions?.includes("attendance.manage") || user?.permissions?.includes("attendance.view")
-  );
+  // Managers/admins land straight on the whole team's attendance - there's
+  // no personal clock-in clutter on their view. "View as Employee" flips
+  // this to false so they see exactly what a regular employee sees: just
+  // their own clock-in/out, with no team table.
+  const showTeam =
+    Boolean(user?.permissions?.includes("attendance.manage") || user?.permissions?.includes("attendance.view")) &&
+    !viewingAsEmployee;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -169,22 +169,10 @@ export default function AttendancePage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Attendance"
-        description="Track daily clock-in and clock-out times"
-        actions={
-          canViewTeam && (
-            <Tabs
-              active={activeTab}
-              onChange={(key) => setActiveTab(key as AttendanceTab)}
-              items={[
-                { key: "mine", label: "My Attendance", icon: LogIn },
-                { key: "team", label: "Team", icon: Users },
-              ]}
-            />
-          )
-        }
+        description={showTeam ? "Monitor your team's daily clock-in and clock-out times" : "Track daily clock-in and clock-out times"}
       />
 
-      {activeTab === "mine" && (
+      {!showTeam && (
         <>
           <Card>
             <div className="flex flex-col items-center gap-4 py-6">
@@ -234,7 +222,7 @@ export default function AttendancePage() {
         </>
       )}
 
-      {activeTab === "team" && canViewTeam && (
+      {showTeam && (
         <Card title="Team attendance" description="Every employee's clock-in and clock-out history">
           {teamMembers.length > 0 && (
             <div className="mb-4 sm:w-64">

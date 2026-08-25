@@ -32,6 +32,8 @@ import {
   Zap,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useViewAsEmployee } from "@/lib/viewAsEmployeeContext";
 import { useToast } from "@/lib/toast";
 import { useConfirm } from "@/lib/confirm";
 import type {
@@ -137,9 +139,15 @@ function statusVariant(s?: string): "success" | "warning" | "danger" | "neutral"
 
 // ─── Section: Overview ───────────────────────────────────────────────────────
 
-function OverviewSection({ employee, onUpdated }: { employee: Employee; onUpdated: (e: Employee) => void }) {
+function OverviewSection({ employee, onUpdated, canManage }: { employee: Employee; onUpdated: (e: Employee) => void; canManage: boolean }) {
   const toast = useToast();
   const [editing, setEditing] = useState(false);
+
+  // Bail out of an in-progress edit if the viewer's permission to manage
+  // employees drops mid-session (e.g. toggling "View as Employee").
+  useEffect(() => {
+    if (!canManage) setEditing(false);
+  }, [canManage]);
   const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
@@ -238,7 +246,7 @@ function OverviewSection({ employee, onUpdated }: { employee: Employee; onUpdate
 
   return (
     <div className="flex flex-col gap-4">
-      <Card title="Personal information" actions={<Button variant="secondary" onClick={() => setEditing(true)}><Pencil className="size-4" />Edit</Button>}>
+      <Card title="Personal information" actions={canManage ? <Button variant="secondary" onClick={() => setEditing(true)}><Pencil className="size-4" />Edit</Button> : undefined}>
         <div className="grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-3">
           {field("Employee code", employee.employee_code)}
           {field("Email", employee.email)}
@@ -526,11 +534,15 @@ function SkillsSection({ data }: { data: Employee360["skills"] }) {
 
 // ─── Section: Projects ───────────────────────────────────────────────────────
 
-function ProjectsSection({ employeeId, data, onChanged }: { employeeId: number; data: Profile360Project[]; onChanged: (items: Profile360Project[]) => void }) {
+function ProjectsSection({ employeeId, data, onChanged, canManage }: { employeeId: number; data: Profile360Project[]; onChanged: (items: Profile360Project[]) => void; canManage: boolean }) {
   const toast = useToast();
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ project_name: "", role: "", start_date: "", status: "active" as Profile360Project["status"] });
+
+  useEffect(() => {
+    if (!canManage) setAdding(false);
+  }, [canManage]);
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
@@ -556,8 +568,8 @@ function ProjectsSection({ employeeId, data, onChanged }: { employeeId: number; 
   const statusColor: Record<string, string> = { active: "bg-brand-50 text-brand-700 border-brand-200", completed: "bg-success-50 text-success-700 border-success-200", on_hold: "bg-warning-50 text-warning-700 border-warning-200" };
 
   return (
-    <Card title={`Projects (${data.length})`} actions={<Button variant="secondary" onClick={() => setAdding((v) => !v)}><Plus className="size-4" />Add</Button>}>
-      {adding && (
+    <Card title={`Projects (${data.length})`} actions={canManage ? <Button variant="secondary" onClick={() => setAdding((v) => !v)}><Plus className="size-4" />Add</Button> : undefined}>
+      {adding && canManage && (
         <form onSubmit={handleAdd} className="mb-4 rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/30">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input label="Project name" name="project_name" required value={form.project_name} onChange={(e) => setForm({ ...form, project_name: e.target.value })} />
@@ -583,7 +595,9 @@ function ProjectsSection({ employeeId, data, onChanged }: { employeeId: number; 
             <div key={p.id} className={cn("rounded-lg border p-3", statusColor[p.status] ?? "bg-gray-50 border-gray-200")}>
               <div className="flex items-start justify-between gap-2">
                 <p className="font-semibold text-gray-900 dark:text-gray-100">{p.project_name}</p>
-                <button type="button" onClick={() => handleDelete(p.id)} className="rounded p-0.5 text-gray-400 hover:text-danger-600"><Trash2 className="size-3.5" /></button>
+                {canManage && (
+                  <button type="button" onClick={() => handleDelete(p.id)} className="rounded p-0.5 text-gray-400 hover:text-danger-600"><Trash2 className="size-3.5" /></button>
+                )}
               </div>
               {p.role && <p className="text-xs text-gray-600">{p.role}</p>}
               <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
@@ -600,11 +614,15 @@ function ProjectsSection({ employeeId, data, onChanged }: { employeeId: number; 
 
 // ─── Section: Assets ─────────────────────────────────────────────────────────
 
-function AssetsSection({ employeeId, data, onChanged }: { employeeId: number; data: Profile360Asset[]; onChanged: (items: Profile360Asset[]) => void }) {
+function AssetsSection({ employeeId, data, onChanged, canManage }: { employeeId: number; data: Profile360Asset[]; onChanged: (items: Profile360Asset[]) => void; canManage: boolean }) {
   const toast = useToast();
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: "", type: "", serial_number: "", assigned_date: "" });
+
+  useEffect(() => {
+    if (!canManage) setAdding(false);
+  }, [canManage]);
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
@@ -628,8 +646,8 @@ function AssetsSection({ employeeId, data, onChanged }: { employeeId: number; da
   }
 
   return (
-    <Card title={`Assets (${data.length})`} actions={<Button variant="secondary" onClick={() => setAdding((v) => !v)}><Plus className="size-4" />Add</Button>}>
-      {adding && (
+    <Card title={`Assets (${data.length})`} actions={canManage ? <Button variant="secondary" onClick={() => setAdding((v) => !v)}><Plus className="size-4" />Add</Button> : undefined}>
+      {adding && canManage && (
         <form onSubmit={handleAdd} className="mb-4 rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/30">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input label="Asset name" name="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -668,7 +686,9 @@ function AssetsSection({ employeeId, data, onChanged }: { employeeId: number; da
                     {a.returned_date ? <Badge variant="neutral">{fmtDate(a.returned_date)}</Badge> : <Badge variant="success" dot>Active</Badge>}
                   </td>
                   <td className="py-2.5">
-                    <button type="button" onClick={() => handleDelete(a.id)} className="rounded p-1 text-gray-400 hover:text-danger-600"><Trash2 className="size-3.5" /></button>
+                    {canManage && (
+                      <button type="button" onClick={() => handleDelete(a.id)} className="rounded p-1 text-gray-400 hover:text-danger-600"><Trash2 className="size-3.5" /></button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -682,11 +702,15 @@ function AssetsSection({ employeeId, data, onChanged }: { employeeId: number; da
 
 // ─── Section: Training ───────────────────────────────────────────────────────
 
-function TrainingSection({ employeeId, data, onChanged }: { employeeId: number; data: Profile360Training[]; onChanged: (items: Profile360Training[]) => void }) {
+function TrainingSection({ employeeId, data, onChanged, canManage }: { employeeId: number; data: Profile360Training[]; onChanged: (items: Profile360Training[]) => void; canManage: boolean }) {
   const toast = useToast();
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ course_name: "", provider: "", completed_date: "", status: "enrolled" as Profile360Training["status"] });
+
+  useEffect(() => {
+    if (!canManage) setAdding(false);
+  }, [canManage]);
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
@@ -712,8 +736,8 @@ function TrainingSection({ employeeId, data, onChanged }: { employeeId: number; 
     s === "completed" ? "success" : s === "enrolled" ? "brand" as "neutral" : "danger";
 
   return (
-    <Card title={`Training (${data.length})`} actions={<Button variant="secondary" onClick={() => setAdding((v) => !v)}><Plus className="size-4" />Add</Button>}>
-      {adding && (
+    <Card title={`Training (${data.length})`} actions={canManage ? <Button variant="secondary" onClick={() => setAdding((v) => !v)}><Plus className="size-4" />Add</Button> : undefined}>
+      {adding && canManage && (
         <form onSubmit={handleAdd} className="mb-4 rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/30">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input label="Course name" name="course_name" required value={form.course_name} onChange={(e) => setForm({ ...form, course_name: e.target.value })} />
@@ -744,7 +768,9 @@ function TrainingSection({ employeeId, data, onChanged }: { employeeId: number; 
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={statusV(t.status)} dot>{t.status}</Badge>
-                <button type="button" onClick={() => handleDelete(t.id)} className="rounded p-1 text-gray-400 hover:text-danger-600"><Trash2 className="size-3.5" /></button>
+                {canManage && (
+                  <button type="button" onClick={() => handleDelete(t.id)} className="rounded p-1 text-gray-400 hover:text-danger-600"><Trash2 className="size-3.5" /></button>
+                )}
               </div>
             </div>
           ))}
@@ -756,11 +782,15 @@ function TrainingSection({ employeeId, data, onChanged }: { employeeId: number; 
 
 // ─── Section: Certificates ───────────────────────────────────────────────────
 
-function CertificatesSection({ employeeId, data, onChanged }: { employeeId: number; data: Profile360Certificate[]; onChanged: (items: Profile360Certificate[]) => void }) {
+function CertificatesSection({ employeeId, data, onChanged, canManage }: { employeeId: number; data: Profile360Certificate[]; onChanged: (items: Profile360Certificate[]) => void; canManage: boolean }) {
   const toast = useToast();
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: "", issuer: "", issue_date: "", expiry_date: "" });
+
+  useEffect(() => {
+    if (!canManage) setAdding(false);
+  }, [canManage]);
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
@@ -785,8 +815,8 @@ function CertificatesSection({ employeeId, data, onChanged }: { employeeId: numb
   const isExpired = (d?: string | null) => d && new Date(d) < new Date();
 
   return (
-    <Card title={`Certificates (${data.length})`} actions={<Button variant="secondary" onClick={() => setAdding((v) => !v)}><Plus className="size-4" />Add</Button>}>
-      {adding && (
+    <Card title={`Certificates (${data.length})`} actions={canManage ? <Button variant="secondary" onClick={() => setAdding((v) => !v)}><Plus className="size-4" />Add</Button> : undefined}>
+      {adding && canManage && (
         <form onSubmit={handleAdd} className="mb-4 rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/30">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input label="Certificate name" name="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -819,7 +849,9 @@ function CertificatesSection({ employeeId, data, onChanged }: { employeeId: numb
                   )}
                 </div>
               </div>
-              <button type="button" onClick={() => handleDelete(c.id)} className="rounded p-1 text-gray-400 hover:text-danger-600"><Trash2 className="size-3.5" /></button>
+              {canManage && (
+                <button type="button" onClick={() => handleDelete(c.id)} className="rounded p-1 text-gray-400 hover:text-danger-600"><Trash2 className="size-3.5" /></button>
+              )}
             </div>
           ))}
         </div>
@@ -830,11 +862,15 @@ function CertificatesSection({ employeeId, data, onChanged }: { employeeId: numb
 
 // ─── Section: Documents ──────────────────────────────────────────────────────
 
-function DocumentsSection({ employeeId, data, onChanged }: { employeeId: number; data: Profile360Document[]; onChanged: (items: Profile360Document[]) => void }) {
+function DocumentsSection({ employeeId, data, onChanged, canManage }: { employeeId: number; data: Profile360Document[]; onChanged: (items: Profile360Document[]) => void; canManage: boolean }) {
   const toast = useToast();
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: "", type: "", url: "" });
+
+  useEffect(() => {
+    if (!canManage) setAdding(false);
+  }, [canManage]);
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
@@ -857,8 +893,8 @@ function DocumentsSection({ employeeId, data, onChanged }: { employeeId: number;
   }
 
   return (
-    <Card title={`Documents (${data.length})`} actions={<Button variant="secondary" onClick={() => setAdding((v) => !v)}><Plus className="size-4" />Add</Button>}>
-      {adding && (
+    <Card title={`Documents (${data.length})`} actions={canManage ? <Button variant="secondary" onClick={() => setAdding((v) => !v)}><Plus className="size-4" />Add</Button> : undefined}>
+      {adding && canManage && (
         <form onSubmit={handleAdd} className="mb-4 rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/30">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input label="Document name" name="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -895,7 +931,9 @@ function DocumentsSection({ employeeId, data, onChanged }: { employeeId: number;
                   <ExternalLink className="size-4" />
                 </a>
               )}
-              <button type="button" onClick={() => handleDelete(d.id)} className="rounded p-1 text-gray-400 hover:text-danger-600"><Trash2 className="size-3.5" /></button>
+              {canManage && (
+                <button type="button" onClick={() => handleDelete(d.id)} className="rounded p-1 text-gray-400 hover:text-danger-600"><Trash2 className="size-3.5" /></button>
+              )}
             </div>
           ))}
         </div>
@@ -906,7 +944,7 @@ function DocumentsSection({ employeeId, data, onChanged }: { employeeId: number;
 
 // ─── Section: Notes ──────────────────────────────────────────────────────────
 
-function NotesSection({ employeeId, data, onChanged }: { employeeId: number; data: Profile360Note[]; onChanged: (items: Profile360Note[]) => void }) {
+function NotesSection({ employeeId, data, onChanged, canManage }: { employeeId: number; data: Profile360Note[]; onChanged: (items: Profile360Note[]) => void; canManage: boolean }) {
   const toast = useToast();
   const [body, setBody] = useState("");
   const [type, setType] = useState<Profile360Note["type"]>("general");
@@ -942,6 +980,7 @@ function NotesSection({ employeeId, data, onChanged }: { employeeId: number; dat
 
   return (
     <div className="flex flex-col gap-4">
+      {canManage && (
       <Card title="Add note">
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex gap-2">
@@ -965,6 +1004,7 @@ function NotesSection({ employeeId, data, onChanged }: { employeeId: number; dat
           </div>
         </form>
       </Card>
+      )}
 
       {data.length === 0 ? (
         <Card><p className="py-6 text-center text-sm text-gray-400">No notes yet.</p></Card>
@@ -979,7 +1019,9 @@ function NotesSection({ employeeId, data, onChanged }: { employeeId: number; dat
                     {n.author && `${n.author} · `}{new Date(n.created_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </div>
-                <button type="button" onClick={() => handleDelete(n.id)} className="rounded p-0.5 text-gray-400 hover:text-danger-600"><X className="size-3.5" /></button>
+                {canManage && (
+                  <button type="button" onClick={() => handleDelete(n.id)} className="rounded p-0.5 text-gray-400 hover:text-danger-600"><X className="size-3.5" /></button>
+                )}
               </div>
               <p className="mt-2 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{n.body}</p>
             </div>
@@ -1053,6 +1095,9 @@ export default function EmployeeProfilePage() {
   const router = useRouter();
   const toast = useToast();
   const confirm = useConfirm();
+  const { user } = useAuth();
+  const viewingAsEmployee = useViewAsEmployee();
+  const canManageEmployees = Boolean(user?.permissions?.includes("employees.manage")) && !viewingAsEmployee;
   const id = params.id;
 
   const [data, setData] = useState<Employee360 | null>(null);
@@ -1123,9 +1168,11 @@ export default function EmployeeProfilePage() {
               </div>
             </div>
             <div className="flex shrink-0 flex-wrap gap-2 pb-1">
-              <button type="button" onClick={handleDelete} className="inline-flex items-center gap-1.5 rounded-lg border border-danger-200 bg-danger-50 px-3 py-1.5 text-xs font-medium text-danger-700 hover:bg-danger-100 transition-colors">
-                <Trash2 className="size-3.5" />Delete
-              </button>
+              {canManageEmployees && (
+                <button type="button" onClick={handleDelete} className="inline-flex items-center gap-1.5 rounded-lg border border-danger-200 bg-danger-50 px-3 py-1.5 text-xs font-medium text-danger-700 hover:bg-danger-100 transition-colors">
+                  <Trash2 className="size-3.5" />Delete
+                </button>
+              )}
             </div>
           </div>
 
@@ -1180,7 +1227,7 @@ export default function EmployeeProfilePage() {
       {/* ── Tab content ── */}
       <div className="min-h-64">
         {activeTab === "overview" && (
-          <OverviewSection employee={emp} onUpdated={(e) => setData({ ...data, employee: e })} />
+          <OverviewSection employee={emp} onUpdated={(e) => setData({ ...data, employee: e })} canManage={canManageEmployees} />
         )}
         {activeTab === "attendance" && <AttendanceSection data={data.attendance} />}
         {activeTab === "leave" && <LeaveSection data={data.leave} />}
@@ -1188,22 +1235,22 @@ export default function EmployeeProfilePage() {
         {activeTab === "performance" && <PerformanceSection data={data.performance} />}
         {activeTab === "skills" && <SkillsSection data={data.skills} />}
         {activeTab === "projects" && (
-          <ProjectsSection employeeId={emp.id} data={data.projects} onChanged={(items) => setData({ ...data, projects: items })} />
+          <ProjectsSection employeeId={emp.id} data={data.projects} onChanged={(items) => setData({ ...data, projects: items })} canManage={canManageEmployees} />
         )}
         {activeTab === "assets" && (
-          <AssetsSection employeeId={emp.id} data={data.assets} onChanged={(items) => setData({ ...data, assets: items })} />
+          <AssetsSection employeeId={emp.id} data={data.assets} onChanged={(items) => setData({ ...data, assets: items })} canManage={canManageEmployees} />
         )}
         {activeTab === "training" && (
-          <TrainingSection employeeId={emp.id} data={data.training} onChanged={(items) => setData({ ...data, training: items })} />
+          <TrainingSection employeeId={emp.id} data={data.training} onChanged={(items) => setData({ ...data, training: items })} canManage={canManageEmployees} />
         )}
         {activeTab === "certificates" && (
-          <CertificatesSection employeeId={emp.id} data={data.certificates} onChanged={(items) => setData({ ...data, certificates: items })} />
+          <CertificatesSection employeeId={emp.id} data={data.certificates} onChanged={(items) => setData({ ...data, certificates: items })} canManage={canManageEmployees} />
         )}
         {activeTab === "documents" && (
-          <DocumentsSection employeeId={emp.id} data={data.documents} onChanged={(items) => setData({ ...data, documents: items })} />
+          <DocumentsSection employeeId={emp.id} data={data.documents} onChanged={(items) => setData({ ...data, documents: items })} canManage={canManageEmployees} />
         )}
         {activeTab === "notes" && (
-          <NotesSection employeeId={emp.id} data={data.notes} onChanged={(items) => setData({ ...data, notes: items })} />
+          <NotesSection employeeId={emp.id} data={data.notes} onChanged={(items) => setData({ ...data, notes: items })} canManage={canManageEmployees} />
         )}
         {activeTab === "timeline" && <TimelineSection data={data.timeline} />}
       </div>

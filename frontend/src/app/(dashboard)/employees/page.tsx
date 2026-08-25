@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { GitBranch, Plus, Search, Users } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useViewAsEmployee } from "@/lib/viewAsEmployeeContext";
 import { useToast } from "@/lib/toast";
 import type { Department, Designation, Employee, Paginated, PaginationMeta } from "@/lib/types";
 import { Card } from "@/components/Card";
@@ -25,6 +27,9 @@ const EMPLOYEE_VIEWS = [
 const emptyMeta: PaginationMeta = { current_page: 1, last_page: 1, total: 0 };
 
 export default function EmployeesPage() {
+  const { user } = useAuth();
+  const viewingAsEmployee = useViewAsEmployee();
+  const canManageEmployees = Boolean(user?.permissions?.includes("employees.manage")) && !viewingAsEmployee;
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyMeta);
@@ -101,10 +106,12 @@ export default function EmployeesPage() {
         actions={
           <>
             <ViewToggle items={EMPLOYEE_VIEWS} />
-            <Button onClick={() => setModalOpen(true)}>
-              <Plus className="size-4" aria-hidden="true" />
-              Add employee
-            </Button>
+            {canManageEmployees && (
+              <Button onClick={() => setModalOpen(true)}>
+                <Plus className="size-4" aria-hidden="true" />
+                Add employee
+              </Button>
+            )}
           </>
         }
       />

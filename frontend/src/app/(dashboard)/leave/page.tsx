@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Gift, ListChecks, Plus, Trash2, User as UserIcon, Users, X } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useViewAsEmployee } from "@/lib/viewAsEmployeeContext";
 import { useToast } from "@/lib/toast";
 import type { Holiday, LeaveRequest, LeaveStatus, LeaveType, Paginated } from "@/lib/types";
 import { Card } from "@/components/Card";
@@ -237,6 +238,7 @@ function RequestLeaveModal({
 
 export default function LeavePage() {
   const { user } = useAuth();
+  const viewingAsEmployee = useViewAsEmployee();
   const [scope, setScope] = useState<LeaveScope>("mine");
   const [mineView, setMineView] = useState<MineView>("calendar");
   const [teamView, setTeamView] = useState<TeamView>("requests");
@@ -257,12 +259,20 @@ export default function LeavePage() {
 
   // Only managers/admins get team-wide requests back from the API at all -
   // for a plain employee this is always false and they just see their own.
-  const canViewTeam = Boolean(
-    user?.permissions?.includes("leave.manage") || user?.permissions?.includes("leave.approve")
-  );
+  // "View as Employee" hides it too, even for an admin/manager, so the
+  // preview matches what a real employee sees.
+  const canViewTeam =
+    Boolean(user?.permissions?.includes("leave.manage") || user?.permissions?.includes("leave.approve")) &&
+    !viewingAsEmployee;
   // Holiday create/delete is gated server-side on leave.manage specifically -
   // a leave.approve-only manager can see the Team tab but not manage holidays.
-  const canManageHolidays = Boolean(user?.permissions?.includes("leave.manage"));
+  const canManageHolidays = Boolean(user?.permissions?.includes("leave.manage")) && !viewingAsEmployee;
+
+  // Falls back to "mine" if Team was open when the preview turned on -
+  // otherwise the page would render neither scope's content.
+  useEffect(() => {
+    if (viewingAsEmployee) setScope("mine");
+  }, [viewingAsEmployee]);
 
   const loadHolidays = useCallback(async () => {
     try {

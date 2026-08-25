@@ -14,6 +14,8 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useViewAsEmployee } from "@/lib/viewAsEmployeeContext";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
@@ -120,6 +122,7 @@ interface NodeCardProps {
   node: OrgNode;
   dnd: DndState;
   searchQuery: string;
+  canManage: boolean;
   onDragStart: (id: number) => void;
   onDragOver: (id: number) => void;
   onDragLeave: () => void;
@@ -132,6 +135,7 @@ function NodeCard({
   node,
   dnd,
   searchQuery,
+  canManage,
   onDragStart,
   onDragOver,
   onDragLeave,
@@ -150,11 +154,12 @@ function NodeCard({
 
   return (
     <div
-      draggable
+      draggable={canManage}
       onClick={() => onClick(node.id)}
-      onDragStart={() => onDragStart(node.id)}
+      onDragStart={() => canManage && onDragStart(node.id)}
       onDragEnd={onDragEnd}
       onDragOver={(e) => {
+        if (!canManage) return;
         e.preventDefault();
         e.stopPropagation();
         if (!isInvalid && dnd.draggingId !== node.id) {
@@ -171,7 +176,7 @@ function NodeCard({
       onDrop={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (dnd.draggingId !== null && dnd.draggingId !== node.id && !isInvalid) {
+        if (canManage && dnd.draggingId !== null && dnd.draggingId !== node.id && !isInvalid) {
           onDrop(dnd.draggingId, node.id);
         }
       }}
@@ -183,7 +188,9 @@ function NodeCard({
           ? "opacity-30 scale-95 shadow-none"
           : isInvalid
           ? "opacity-40 cursor-not-allowed"
-          : "cursor-grab active:cursor-grabbing hover:shadow-md",
+          : canManage
+          ? "cursor-grab active:cursor-grabbing hover:shadow-md"
+          : "cursor-pointer hover:shadow-md",
         isDropTarget
           ? "ring-2 ring-brand-500 shadow-lg shadow-brand-100/50 dark:shadow-brand-900/50 scale-105"
           : "",
@@ -249,6 +256,7 @@ interface BranchProps {
   nodes: OrgNode[];
   dnd: DndState;
   searchQuery: string;
+  canManage: boolean;
   onDragStart: (id: number) => void;
   onDragOver: (id: number) => void;
   onDragLeave: () => void;
@@ -261,6 +269,7 @@ function OrgBranch({
   nodes,
   dnd,
   searchQuery,
+  canManage,
   onDragStart,
   onDragOver,
   onDragLeave,
@@ -298,6 +307,7 @@ function OrgBranch({
               node={node}
               dnd={dnd}
               searchQuery={searchQuery}
+              canManage={canManage}
               onDragStart={onDragStart}
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
@@ -314,6 +324,7 @@ function OrgBranch({
                   nodes={node.children}
                   dnd={dnd}
                   searchQuery={searchQuery}
+                  canManage={canManage}
                   onDragStart={onDragStart}
                   onDragOver={onDragOver}
                   onDragLeave={onDragLeave}
@@ -334,6 +345,9 @@ function OrgBranch({
 
 export default function OrgChartPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const viewingAsEmployee = useViewAsEmployee();
+  const canManageEmployees = Boolean(user?.permissions?.includes("employees.manage")) && !viewingAsEmployee;
   const [roots, setRoots] = useState<OrgNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -351,6 +365,7 @@ export default function OrgChartPage() {
 
   const handleDragStart = useCallback(
     (id: number) => {
+      if (!canManageEmployees) return;
       const node = findNode(roots, id);
       setDnd({
         draggingId: id,
@@ -359,7 +374,7 @@ export default function OrgChartPage() {
         descendantIds: node ? getDescendantIds(node) : new Set(),
       });
     },
-    [roots]
+    [roots, canManageEmployees]
   );
 
   const handleDragOver = useCallback((id: number) => {
@@ -376,6 +391,7 @@ export default function OrgChartPage() {
 
   const handleDrop = useCallback(
     async (employeeId: number, newManagerId: number | null) => {
+      if (!canManageEmployees) return;
       const snapshot = roots;
       const updated = moveNode(roots, employeeId, newManagerId);
       setRoots(updated);
@@ -396,7 +412,7 @@ export default function OrgChartPage() {
         setSaving(false);
       }
     },
-    [roots]
+    [roots, canManageEmployees]
   );
 
   const totalEmployees = useMemo(() => countAll(roots), [roots]);
@@ -414,7 +430,7 @@ export default function OrgChartPage() {
           <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
             {loading ? "Loading…" : `${totalEmployees} employees`}
             {" · "}
-            Drag cards to reorganize reporting lines
+            {canManageEmployees ? "Drag cards to reorganize reporting lines" : "Click a card to view that employee's profile"}
           </p>
         </div>
 
@@ -489,7 +505,7 @@ export default function OrgChartPage() {
       )}
 
       {/* Drop-to-root zone — only visible while dragging */}
-      {isDragging && (
+      {isDragging && canManageEmployees && (
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -543,6 +559,7 @@ export default function OrgChartPage() {
                 nodes={roots}
                 dnd={dnd}
                 searchQuery={search}
+                canManage={canManageEmployees}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -570,10 +587,12 @@ export default function OrgChartPage() {
           <span className="size-2 rounded-full bg-red-400" />
           Terminated
         </span>
-        <span className="ml-auto flex items-center gap-1.5 text-gray-400">
-          <span className="inline-flex size-3 rounded border-2 border-brand-500" />
-          Drag target
-        </span>
+        {canManageEmployees && (
+          <span className="ml-auto flex items-center gap-1.5 text-gray-400">
+            <span className="inline-flex size-3 rounded border-2 border-brand-500" />
+            Drag target
+          </span>
+        )}
         <span className="flex items-center gap-1.5 text-gray-400">
           <span className="inline-flex size-3 rounded border-2 border-yellow-400" />
           Search match
