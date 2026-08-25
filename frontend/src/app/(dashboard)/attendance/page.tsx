@@ -1,19 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, LogIn, LogOut } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useViewAsEmployee } from "@/lib/viewAsEmployeeContext";
 import { useToast } from "@/lib/toast";
 import { useConfirm } from "@/lib/confirm";
-import type { AttendanceRecord, Paginated } from "@/lib/types";
+import type { AttendanceRecord, Employee, Paginated, PaginationMeta } from "@/lib/types";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { Select } from "@/components/Select";
 import { Table, type Column } from "@/components/Table";
 import { Badge } from "@/components/Badge";
 import { PageHeader } from "@/components/PageHeader";
+import { Pagination } from "@/components/Pagination";
+
+const PER_PAGE = 20;
+const emptyMeta: PaginationMeta = { current_page: 1, last_page: 1, total: 0 };
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -25,10 +29,14 @@ export default function AttendancePage() {
   const toast = useToast();
   const confirm = useConfirm();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta>(emptyMeta);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [teamEmployeeFilter, setTeamEmployeeFilter] = useState("");
+  const [teamMembers, setTeamMembers] = useState<{ id: number; full_name: string }[]>([]);
+  const [todaysRecord, setTodaysRecord] = useState<AttendanceRecord | null>(null);
 
   // Managers/admins land straight on the whole team's attendance - there's
   // no personal clock-in clutter on their view. "View as Employee" flips
@@ -38,45 +46,87 @@ export default function AttendancePage() {
     Boolean(user?.permissions?.includes("attendance.manage") || user?.permissions?.includes("attendance.view")) &&
     !viewingAsEmployee;
 
+  // The paginated table for the page. When not showing the team, this is
+  // scoped to the caller's own employee_id — otherwise a manager/admin would
+  // get every company record back instead of just their own history.
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch<Paginated<AttendanceRecord>>("/attendance?per_page=100");
+      const params = new URLSearchParams({ page: String(page), per_page: String(PER_PAGE) });
+      if (showTeam) {
+        if (teamEmployeeFilter) params.set("employee_id", teamEmployeeFilter);
+      } else if (user?.employee?.id) {
+        params.set("employee_id", String(user.employee.id));
+      }
+      const res = await apiFetch<Paginated<AttendanceRecord>>(`/attendance?${params.toString()}`);
       setRecords(res.data);
+      setMeta(res.meta);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load attendance.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, showTeam, teamEmployeeFilter, user?.employee?.id]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // The API returns every employee's records to a manager/admin, so "my"
-  // rows have to be picked out by employee_id - matching on date alone
-  // could grab a co-worker's record for today instead of the caller's own.
-  const myRecords = useMemo(
-    () => (user?.employee ? records.filter((r) => r.employee?.id === user.employee!.id) : records),
-    [records, user?.employee]
-  );
+  // Back to page 1 whenever the view or the team filter changes, so we're
+  // never left showing an out-of-range page for the new result set.
+  useEffect(() => {
+    setPage(1);
+  }, [showTeam, teamEmployeeFilter]);
 
-  const teamMembers = useMemo(() => {
-    const map = new Map<number, string>();
-    for (const r of records) {
-      if (r.employee) map.set(r.employee.id, r.employee.full_name);
+  // Today's clock-in status is fetched independently of the paginated
+  // history table above — otherwise it would silently go stale (or blank)
+  // whenever the caller is browsing any page but the first.
+  const loadToday = useCallback(async () => {
+    if (showTeam) {
+      setTodaysRecord(null);
+      return;
     }
-    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-  }, [records]);
+    try {
+      const today = todayStr();
+      const params = new URLSearchParams({ from: today, to: today, per_page: "1" });
+      if (user?.employee?.id) params.set("employee_id", String(user.employee.id));
+      const res = await apiFetch<Paginated<AttendanceRecord>>(`/attendance?${params.toString()}`);
+      setTodaysRecord(res.data[0] ?? null);
+    } catch {
+      // Non-fatal — the status card just won't reflect today's state.
+    }
+  }, [showTeam, user?.employee?.id]);
 
-  const teamRecords = useMemo(
-    () => (teamEmployeeFilter ? records.filter((r) => r.employee?.id === Number(teamEmployeeFilter)) : records),
-    [records, teamEmployeeFilter]
-  );
+  useEffect(() => {
+    loadToday();
+  }, [loadToday]);
 
-  const todaysRecord = myRecords.find((r) => r.date.slice(0, 10) === todayStr());
+  // The Team dropdown needs every employee at the company, not just the 20
+  // on the current attendance page, so it's fetched separately.
+  useEffect(() => {
+    if (!showTeam) {
+      setTeamMembers([]);
+      return;
+    }
+    let cancelled = false;
+    apiFetch<Paginated<Employee>>("/employees?per_page=200")
+      .then((res) => {
+        if (cancelled) return;
+        setTeamMembers(
+          res.data
+            .map((e) => ({ id: e.id, full_name: e.full_name }))
+            .sort((a, b) => a.full_name.localeCompare(b.full_name))
+        );
+      })
+      .catch(() => {
+        // Non-fatal — the employee filter dropdown just stays empty.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showTeam]);
+
   const clockedIn = Boolean(todaysRecord?.clock_in) && !todaysRecord?.clock_out;
   const completedToday = Boolean(todaysRecord?.clock_in) && Boolean(todaysRecord?.clock_out);
 
@@ -94,7 +144,7 @@ export default function AttendancePage() {
     try {
       await apiFetch("/attendance/clock-in", { method: "POST" });
       toast.success("Clocked in.");
-      await load();
+      await Promise.all([load(), loadToday()]);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to clock in.");
     } finally {
@@ -116,7 +166,7 @@ export default function AttendancePage() {
     try {
       await apiFetch("/attendance/clock-out", { method: "POST" });
       toast.success("Clocked out.");
-      await load();
+      await Promise.all([load(), loadToday()]);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to clock out.");
     } finally {
@@ -213,11 +263,14 @@ export default function AttendancePage() {
           <Card title="History">
             <Table
               columns={baseColumns}
-              data={myRecords}
+              data={records}
               keyExtractor={(r) => r.id}
               loading={loading}
               emptyMessage="No attendance records found."
             />
+            <div className="mt-4">
+              <Pagination meta={meta} onPageChange={setPage} />
+            </div>
           </Card>
         </>
       )}
@@ -232,9 +285,9 @@ export default function AttendancePage() {
                 onChange={(e) => setTeamEmployeeFilter(e.target.value)}
               >
                 <option value="">All employees</option>
-                {teamMembers.map(([id, name]) => (
-                  <option key={id} value={id}>
-                    {name}
+                {teamMembers.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.full_name}
                   </option>
                 ))}
               </Select>
@@ -242,11 +295,14 @@ export default function AttendancePage() {
           )}
           <Table
             columns={teamColumns}
-            data={teamRecords}
+            data={records}
             keyExtractor={(r) => r.id}
             loading={loading}
             emptyMessage="No attendance records found."
           />
+          <div className="mt-4">
+            <Pagination meta={meta} onPageChange={setPage} />
+          </div>
         </Card>
       )}
     </div>

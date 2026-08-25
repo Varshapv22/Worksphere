@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Gift, ListChecks, Plus, Trash2, User as UserIcon, Users, X } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Gift, ListChecks, Plus, Trash2, X } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useViewAsEmployee } from "@/lib/viewAsEmployeeContext";
@@ -20,7 +20,6 @@ import { PageHeader } from "@/components/PageHeader";
 import { Tabs } from "@/components/Tabs";
 import { cn } from "@/lib/cn";
 
-type LeaveScope = "mine" | "team";
 type MineView = "calendar" | "requests";
 type TeamView = "requests" | "holidays";
 
@@ -239,7 +238,6 @@ function RequestLeaveModal({
 export default function LeavePage() {
   const { user } = useAuth();
   const viewingAsEmployee = useViewAsEmployee();
-  const [scope, setScope] = useState<LeaveScope>("mine");
   const [mineView, setMineView] = useState<MineView>("calendar");
   const [teamView, setTeamView] = useState<TeamView>("requests");
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
@@ -257,22 +255,16 @@ export default function LeavePage() {
   const [teamEmployeeFilter, setTeamEmployeeFilter] = useState("");
   const toast = useToast();
 
-  // Only managers/admins get team-wide requests back from the API at all -
-  // for a plain employee this is always false and they just see their own.
-  // "View as Employee" hides it too, even for an admin/manager, so the
-  // preview matches what a real employee sees.
-  const canViewTeam =
+  // Managers/admins land straight on the whole team's leave requests -
+  // there's no personal "My Leave" clutter on their view. "View as Employee"
+  // flips this to false so they see exactly what a regular employee sees:
+  // just their own calendar and requests, with no team table.
+  const showTeam =
     Boolean(user?.permissions?.includes("leave.manage") || user?.permissions?.includes("leave.approve")) &&
     !viewingAsEmployee;
   // Holiday create/delete is gated server-side on leave.manage specifically -
-  // a leave.approve-only manager can see the Team tab but not manage holidays.
+  // a leave.approve-only manager can see team requests but not manage holidays.
   const canManageHolidays = Boolean(user?.permissions?.includes("leave.manage")) && !viewingAsEmployee;
-
-  // Falls back to "mine" if Team was open when the preview turned on -
-  // otherwise the page would render neither scope's content.
-  useEffect(() => {
-    if (viewingAsEmployee) setScope("mine");
-  }, [viewingAsEmployee]);
 
   const loadHolidays = useCallback(async () => {
     try {
@@ -431,7 +423,7 @@ export default function LeavePage() {
   const actionsColumn: Column<LeaveRequest> = {
     header: "Actions",
     accessor: (r) =>
-      canViewTeam && r.status === "pending" && r.employee?.id !== user?.employee?.id ? (
+      showTeam && r.status === "pending" && r.employee?.id !== user?.employee?.id ? (
         <div className="flex gap-2">
           <button
             type="button"
@@ -472,25 +464,13 @@ export default function LeavePage() {
       <PageHeader
         title="Leave"
         description={
-          scope === "team"
+          showTeam
             ? "Viewing and approving requests for everyone on your team"
             : "Request time off and track your own requests"
         }
-        actions={
-          canViewTeam && (
-            <Tabs
-              active={scope}
-              onChange={(key) => setScope(key as LeaveScope)}
-              items={[
-                { key: "mine", label: "My Leave", icon: UserIcon },
-                { key: "team", label: "Team", icon: Users, badge: pendingCount },
-              ]}
-            />
-          )
-        }
       />
 
-      {scope === "mine" && (
+      {!showTeam && (
         <Tabs
           active={mineView}
           onChange={(key) => setMineView(key as MineView)}
@@ -501,7 +481,7 @@ export default function LeavePage() {
         />
       )}
 
-      {scope === "team" && canViewTeam && canManageHolidays && (
+      {showTeam && canManageHolidays && (
         <Tabs
           active={teamView}
           onChange={(key) => setTeamView(key as TeamView)}
@@ -512,7 +492,7 @@ export default function LeavePage() {
         />
       )}
 
-      {scope === "mine" && mineView === "calendar" && (
+      {!showTeam && mineView === "calendar" && (
       <Card
         title={viewDate.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
         description="Click any day to request leave"
@@ -622,7 +602,7 @@ export default function LeavePage() {
       </Card>
       )}
 
-      {scope === "team" && canManageHolidays && teamView === "holidays" && (
+      {showTeam && canManageHolidays && teamView === "holidays" && (
       <Card title="Company Holidays" description="Non-working days visible to everyone on the calendar above">
         <form onSubmit={handleAddHoliday} className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
@@ -684,7 +664,7 @@ export default function LeavePage() {
         }}
       />
 
-      {scope === "mine" && mineView === "requests" && (
+      {!showTeam && mineView === "requests" && (
       <Card title="My Requests">
         <div className="mb-4 sm:w-56">
           <Select
@@ -710,7 +690,7 @@ export default function LeavePage() {
       </Card>
       )}
 
-      {scope === "team" && canViewTeam && (teamView === "requests" || !canManageHolidays) && (
+      {showTeam && (teamView === "requests" || !canManageHolidays) && (
       <Card title="Team requests" description="Every employee's leave requests">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="sm:w-56">

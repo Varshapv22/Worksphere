@@ -252,7 +252,7 @@ export const MANUAL_GROUPS: ManualGroup[] = [
         id: "leave",
         title: "Requesting Leave",
         icon: CalendarDays,
-        audience: "Everyone",
+        audience: "Employee",
         summary: "The leave calendar, submitting a request, and tracking your own requests.",
         blocks: [
           { kind: "h3", text: "Calendar view" },
@@ -274,6 +274,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
           {
             kind: "p",
             text: "A table of everything you've submitted — type, dates, number of days, and status — filterable to pending / approved / rejected.",
+          },
+          {
+            kind: "callout",
+            tone: "tip",
+            text: "A Manager or Company Admin lands on the whole team's leave requests instead of this personal view — see \"Managing Team Attendance & Leave\" in the Admin & Manager guide. They can still request their own leave by turning on \"View as Employee,\" which switches them to exactly this view.",
           },
         ],
       },
@@ -556,7 +561,7 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             items: [
               "The sidebar drops every admin-only link — AI Advisor, Departments, App Marketplace, Resume Parser, Analytics, Payroll Simulator, Payroll Config, Developer API, Billing, and Branding all disappear.",
               "The Attendance page switches from the whole team's clock-in/out table to your own personal My Attendance view, so you can clock yourself in and out.",
-              "On the Leave page, the Team tab (approvals and Company Holidays) is hidden — only My Leave (calendar + your own requests) remains.",
+              "The Leave page switches from the team's requests and Company Holidays to your own My Leave view (calendar + your own requests), so you can request time off for yourself.",
               "On the Employees directory and every profile page, \"Add employee,\" \"Edit,\" \"Delete,\" and every Add/remove control on the Projects, Assets, Training, Certificates, Documents, and Notes tabs disappear — you get the same read-only view an employee gets.",
               "On the Org Chart, cards stop being draggable — you can still click through to a profile, but reassigning who reports to whom is off.",
               "Pages that stay visible to everyone anyway — Employees (read-only), Skills Matrix, Knowledge Base, Recognition, AI Assistant, Career Roadmap, Meetings, Assets, Compliance — still show up, since employees use those too.",
@@ -626,10 +631,15 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             kind: "p",
             text: "Anyone with attendance view/manage permissions (managers and company admins) lands on the whole team's attendance — every employee's clock-in/out history, filterable by employee — instead of a personal clock-in view. To clock yourself in or out, turn on \"View as Employee\" first; that switches this page to your own personal view.",
           },
+          {
+            kind: "callout",
+            tone: "info",
+            text: "The attendance history table (both the team view and the personal \"View as Employee\" view) is paginated at 20 records per page.",
+          },
           { kind: "h3", text: "Approving leave" },
           {
             kind: "p",
-            text: "On the Leave page, the same audience sees a Team tab (with a pending-count badge) containing:",
+            text: "Anyone with leave approve/manage permissions lands on the whole team's leave requests instead of a personal calendar — with a pending-count badge — containing:",
           },
           {
             kind: "list",
@@ -639,9 +649,13 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             ],
           },
           {
+            kind: "p",
+            text: "To request your own leave or see your own calendar, turn on \"View as Employee\" first; that switches this page to your own personal view.",
+          },
+          {
             kind: "callout",
             tone: "tip",
-            text: "Both the Attendance team view and the Leave Team tab switch to your own personal view while \"View as Employee\" is on — see \"Previewing as an Employee\" earlier in this guide.",
+            text: "Both Attendance and Leave switch from the team view to your own personal view while \"View as Employee\" is on — see \"Previewing as an Employee\" earlier in this guide.",
           },
         ],
       },
