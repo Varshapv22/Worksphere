@@ -72,6 +72,22 @@ export interface LeaveType {
   id: number;
   name: string;
   days_per_year?: number | null;
+  is_paid?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface WorkingHourConfig {
+  id: number;
+  company_id: number;
+  work_start_time: string;
+  work_end_time: string;
+  standard_hours_per_day: number;
+  late_grace_minutes: number;
+  half_day_threshold_hours: number;
+  work_days: string[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";

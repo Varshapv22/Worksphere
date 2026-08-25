@@ -49,6 +49,7 @@ use App\Http\Controllers\Api\SkillController;
 use App\Http\Controllers\Api\SkillMatrixController;
 use App\Http\Controllers\Api\SupportTicketController;
 use App\Http\Controllers\Api\TwoFactorController;
+use App\Http\Controllers\Api\WorkingHourConfigController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -103,6 +104,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn']);
             Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut']);
             Route::get('/attendance', [AttendanceController::class, 'index']);
+            Route::get('/working-hours-config', [WorkingHourConfigController::class, 'show']);
+            Route::put('/working-hours-config', [WorkingHourConfigController::class, 'update']);
         });
 
         Route::apiResource('leave-types', LeaveTypeController::class);

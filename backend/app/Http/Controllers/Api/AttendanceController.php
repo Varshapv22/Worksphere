@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AttendanceResource;
 use App\Models\Attendance;
+use App\Models\WorkingHourConfig;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -71,8 +72,9 @@ class AttendanceController extends Controller
             'date' => $today,
         ]);
 
-        $attendance->clock_in = now();
-        $attendance->status = $attendance->status ?: 'present';
+        $now = now();
+        $attendance->clock_in = $now;
+        $attendance->status = $attendance->status ?: $this->clockInStatus($employee->company_id, $now);
         $attendance->source = $request->string('source')->toString() ?: 'web';
         $attendance->save();
 
@@ -108,8 +110,33 @@ class AttendanceController extends Controller
 
         $attendance->clock_out = now();
         $attendance->work_minutes = $attendance->clock_in->diffInMinutes($attendance->clock_out);
+
+        $config = WorkingHourConfig::where('company_id', $employee->company_id)->first();
+        if ($config && $attendance->status === 'present' && $attendance->work_minutes < $config->half_day_threshold_hours * 60) {
+            $attendance->status = 'half_day';
+        }
+
         $attendance->save();
 
         return new AttendanceResource($attendance->fresh('employee'));
+    }
+
+    /**
+     * 'late' if clocking in after the configured work start time plus grace
+     * period, otherwise 'present'. Falls back to 'present' when the company
+     * has no working-hours config yet.
+     */
+    private function clockInStatus(int $companyId, Carbon $clockInAt): string
+    {
+        $config = WorkingHourConfig::where('company_id', $companyId)->first();
+
+        if (! $config) {
+            return 'present';
+        }
+
+        $cutoff = Carbon::parse($clockInAt->toDateString().' '.$config->work_start_time)
+            ->addMinutes($config->late_grace_minutes);
+
+        return $clockInAt->greaterThan($cutoff) ? 'late' : 'present';
     }
 }

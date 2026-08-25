@@ -13,6 +13,7 @@ import {
   Building2,
   CalendarCheck,
   CalendarDays,
+  CalendarRange,
   Clock,
   Code2,
   CreditCard,
@@ -34,6 +35,7 @@ import {
   Palette,
   ShieldCheck,
   Sparkles,
+  Timer,
   TrendingUp,
   Users,
   Wallet,
@@ -81,6 +83,8 @@ const tenantNavItems: NavItem[] = [
   { href: "/payroll-config",    label: "Payroll Config",    icon: Globe,           employeeVisible: false },
   { href: "/developer",         label: "Developer API",     icon: Code2,           employeeVisible: false },
   { href: "/billing",           label: "Billing",           icon: Wallet,          employeeVisible: false },
+  { href: "/settings/leave-policy",   label: "Leave Policy",   icon: CalendarRange, employeeVisible: false },
+  { href: "/settings/working-hours",  label: "Working Hours",  icon: Timer,         employeeVisible: false },
   { href: "/settings/branding", label: "Branding",          icon: Palette,         employeeVisible: false },
 ];
 
@@ -111,6 +115,7 @@ const moduleGatedRoutes: Record<string, string> = {
   "/payroll-config":    "payroll",
   "/developer":         "developer-api",
   "/settings/branding": "white-label",
+  "/settings/working-hours": "attendance",
 };
 
 function NavLinks({
