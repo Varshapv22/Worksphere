@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
             'leave.approve',
             'leave.request',
             'departments.manage',
+            'announcements.manage',
         ];
 
         foreach ($permissions as $permission) {

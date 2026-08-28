@@ -51,8 +51,8 @@ function StarRating({
       : active >= 2
       ? "text-yellow-300"
       : active >= 1
-      ? "text-gray-400"
-      : "text-gray-200";
+      ? "text-gray-400 dark:text-gray-500"
+      : "text-gray-200 dark:text-gray-600";
 
   return (
     <div
@@ -75,7 +75,7 @@ function StarRating({
           <Star
             className={cn(
               "size-4 transition-colors",
-              n <= active ? colorClass : "text-gray-200",
+              n <= active ? colorClass : "text-gray-200 dark:text-gray-600",
               n <= active && "fill-current"
             )}
           />
@@ -180,23 +180,23 @@ function ManageSkillsModal({
       </form>
       {error && <p className="mt-2 text-sm text-danger-600">{error}</p>}
 
-      <div className="mt-4 max-h-80 overflow-y-auto rounded-lg border border-gray-100">
+      <div className="mt-4 max-h-80 overflow-y-auto rounded-lg border border-gray-100 dark:border-gray-700">
         {skills.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-400">No skills yet. Add your first one above.</p>
+          <p className="py-8 text-center text-sm text-gray-400 dark:text-gray-500">No skills yet. Add your first one above.</p>
         ) : (
           Object.entries(grouped).map(([cat, items]) => (
             <div key={cat}>
-              <div className="sticky top-0 bg-gray-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <div className="sticky top-0 bg-gray-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:bg-gray-700/60 dark:text-gray-400">
                 {cat}
               </div>
               {items.map((skill) => (
-                <div key={skill.id} className="flex items-center justify-between gap-2 border-t border-gray-50 px-3 py-2">
-                  <span className="text-sm text-gray-800">{skill.name}</span>
+                <div key={skill.id} className="flex items-center justify-between gap-2 border-t border-gray-50 px-3 py-2 dark:border-gray-700/60">
+                  <span className="text-sm text-gray-800 dark:text-gray-200">{skill.name}</span>
                   <button
                     type="button"
                     onClick={() => handleDelete(skill)}
                     disabled={deletingId === skill.id}
-                    className="rounded p-1 text-gray-400 transition-colors hover:bg-danger-50 hover:text-danger-600 disabled:opacity-40"
+                    className="rounded p-1 text-gray-400 transition-colors hover:bg-danger-50 hover:text-danger-600 disabled:opacity-40 dark:text-gray-500 dark:hover:bg-danger-900/20 dark:hover:text-danger-400"
                     aria-label={`Delete ${skill.name}`}
                   >
                     {deletingId === skill.id ? (
@@ -271,18 +271,18 @@ function SkillSearchPanel({ matrix }: { matrix: SkillMatrix | null }) {
       {selectedSkill !== "" && (
         <div className="mt-3">
           {results.length === 0 ? (
-            <p className="text-sm text-gray-400">No employees found at this level.</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">No employees found at this level.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {results.map((e) => (
-                <div key={e.id} className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
-                  <span className="flex size-7 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
+                <div key={e.id} className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-700/40">
+                  <span className="flex size-7 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
                     {e.full_name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
                   </span>
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{e.full_name}</p>
                     {e.department && (
-                      <p className="text-xs text-gray-400">{e.department}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{e.department}</p>
                     )}
                   </div>
                   <StarRating value={e.skill_map[selectedSkill] ?? 0} readonly />
@@ -312,8 +312,8 @@ function MatrixTable({
   if (employees.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <Users className="size-10 text-gray-200" />
-        <p className="text-sm text-gray-400">No active employees found for the selected filters.</p>
+        <Users className="size-10 text-gray-200 dark:text-gray-700" />
+        <p className="text-sm text-gray-400 dark:text-gray-500">No active employees found for the selected filters.</p>
       </div>
     );
   }
@@ -321,8 +321,8 @@ function MatrixTable({
   if (skills.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <BarChart3 className="size-10 text-gray-200" />
-        <p className="text-sm text-gray-400">
+        <BarChart3 className="size-10 text-gray-200 dark:text-gray-700" />
+        <p className="text-sm text-gray-400 dark:text-gray-500">
           No skills defined yet. Click <strong>Manage Skills</strong> to add some.
         </p>
       </div>
@@ -337,17 +337,17 @@ function MatrixTable({
   }, {});
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-100">
+    <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-700">
       <table className="min-w-full border-collapse text-sm">
         <thead>
           {/* Category row */}
-          <tr className="border-b border-gray-100 bg-gray-50">
-            <th className="sticky left-0 z-10 min-w-[180px] bg-gray-50 px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400" />
+          <tr className="border-b border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/60">
+            <th className="sticky left-0 z-10 min-w-[180px] bg-gray-50 px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 dark:bg-gray-800/60 dark:text-gray-500" />
             {Object.entries(grouped).map(([cat, items]) => (
               <th
                 key={cat}
                 colSpan={items.length}
-                className="border-l border-gray-100 px-2 py-2 text-center text-xs font-semibold uppercase tracking-wide text-brand-600"
+                className="border-l border-gray-100 px-2 py-2 text-center text-xs font-semibold uppercase tracking-wide text-brand-600 dark:border-gray-700 dark:text-brand-400"
               >
                 <span className="flex items-center justify-center gap-1">
                   <Tag className="size-3" />
@@ -357,19 +357,19 @@ function MatrixTable({
             ))}
           </tr>
           {/* Skill name row */}
-          <tr className="border-b border-gray-200 bg-white">
-            <th className="sticky left-0 z-10 bg-white px-4 py-3 text-left text-xs font-semibold text-gray-500">
+          <tr className="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+            <th className="sticky left-0 z-10 bg-white px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:bg-gray-800 dark:text-gray-400">
               Employee
             </th>
             {skills.map((skill) => (
               <th
                 key={skill.id}
-                className="border-l border-gray-100 px-3 py-3 text-center text-xs font-semibold text-gray-700 whitespace-nowrap"
+                className="border-l border-gray-100 px-3 py-3 text-center text-xs font-semibold text-gray-700 whitespace-nowrap dark:border-gray-700 dark:text-gray-300"
               >
                 {skill.name}
               </th>
             ))}
-            <th className="border-l border-gray-100 px-3 py-3 text-center text-xs font-semibold text-gray-400">
+            <th className="border-l border-gray-100 px-3 py-3 text-center text-xs font-semibold text-gray-400 dark:border-gray-700 dark:text-gray-500">
               Coverage
             </th>
           </tr>
@@ -384,25 +384,25 @@ function MatrixTable({
               <tr
                 key={emp.id}
                 className={cn(
-                  "border-b border-gray-50 transition-colors",
-                  ei % 2 === 0 ? "bg-white" : "bg-gray-50/40",
-                  "hover:bg-brand-50/30"
+                  "border-b border-gray-50 transition-colors dark:border-gray-700/50",
+                  ei % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50/40 dark:bg-gray-800/60",
+                  "hover:bg-brand-50/30 dark:hover:bg-brand-900/10"
                 )}
               >
                 {/* Employee name */}
                 <td className={cn(
                   "sticky left-0 z-10 px-4 py-3",
-                  ei % 2 === 0 ? "bg-white" : "bg-gray-50/40",
-                  "hover:bg-brand-50/30"
+                  ei % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50/40 dark:bg-gray-800/60",
+                  "hover:bg-brand-50/30 dark:hover:bg-brand-900/10"
                 )}>
                   <div className="flex items-center gap-2.5">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
                       {emp.full_name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
                     </span>
                     <div className="min-w-0">
                       <p className="truncate font-medium text-gray-900 dark:text-gray-100">{emp.full_name}</p>
                       {emp.department && (
-                        <p className="truncate text-xs text-gray-400">{emp.department}</p>
+                        <p className="truncate text-xs text-gray-400 dark:text-gray-500">{emp.department}</p>
                       )}
                     </div>
                     {isSaving && <Loader2 className="size-3.5 shrink-0 animate-spin text-brand-400" />}
@@ -413,7 +413,7 @@ function MatrixTable({
                 {skills.map((skill) => {
                   const proficiency = emp.skill_map[skill.id] ?? 0;
                   return (
-                    <td key={skill.id} className="border-l border-gray-50 px-3 py-3 text-center">
+                    <td key={skill.id} className="border-l border-gray-50 px-3 py-3 text-center dark:border-gray-700/50">
                       <div className="flex justify-center">
                         <StarRating
                           value={proficiency}
@@ -425,15 +425,15 @@ function MatrixTable({
                 })}
 
                 {/* Coverage % */}
-                <td className="border-l border-gray-100 px-3 py-3 text-center">
+                <td className="border-l border-gray-100 px-3 py-3 text-center dark:border-gray-700">
                   <div className="flex flex-col items-center gap-1">
                     <span className={cn(
                       "text-xs font-semibold",
-                      pct >= 80 ? "text-success-600" : pct >= 50 ? "text-warning-600" : "text-gray-400"
+                      pct >= 80 ? "text-success-600 dark:text-success-400" : pct >= 50 ? "text-warning-600 dark:text-warning-400" : "text-gray-400 dark:text-gray-500"
                     )}>
                       {pct}%
                     </span>
-                    <div className="h-1 w-12 overflow-hidden rounded-full bg-gray-100">
+                    <div className="h-1 w-12 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
                       <div
                         className={cn(
                           "h-full rounded-full transition-all",
@@ -451,25 +451,25 @@ function MatrixTable({
 
         {/* Footer summary row */}
         <tfoot>
-          <tr className="border-t border-gray-200 bg-gray-50">
-            <td className="sticky left-0 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-500">
+          <tr className="border-t border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/60">
+            <td className="sticky left-0 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-500 dark:bg-gray-800/60 dark:text-gray-400">
               Skill coverage
             </td>
             {skills.map((skill) => {
               const count = employees.filter((e) => (e.skill_map[skill.id] ?? 0) > 0).length;
               const pct = employees.length > 0 ? Math.round((count / employees.length) * 100) : 0;
               return (
-                <td key={skill.id} className="border-l border-gray-100 px-3 py-2 text-center">
+                <td key={skill.id} className="border-l border-gray-100 px-3 py-2 text-center dark:border-gray-700">
                   <span className={cn(
                     "text-xs font-semibold",
-                    pct >= 80 ? "text-success-600" : pct >= 50 ? "text-warning-600" : "text-gray-400"
+                    pct >= 80 ? "text-success-600 dark:text-success-400" : pct >= 50 ? "text-warning-600 dark:text-warning-400" : "text-gray-400 dark:text-gray-500"
                   )}>
                     {count}/{employees.length}
                   </span>
                 </td>
               );
             })}
-            <td className="border-l border-gray-100" />
+            <td className="border-l border-gray-100 dark:border-gray-700" />
           </tr>
         </tfoot>
       </table>
@@ -570,25 +570,28 @@ export default function SkillsPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Skills tracked", value: skillCount, icon: BarChart3, color: "text-brand-600 bg-brand-50" },
-          { label: "Employees", value: employeeCount, icon: Users, color: "text-indigo-600 bg-indigo-50" },
-          { label: "Ratings logged", value: totalRatings, icon: Star, color: "text-amber-600 bg-amber-50" },
+          { label: "Skills tracked", value: skillCount, icon: BarChart3, color: "text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/30" },
+          { label: "Employees", value: employeeCount, icon: Users, color: "text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-900/30" },
+          { label: "Ratings logged", value: totalRatings, icon: Star, color: "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/30" },
           {
             label: "Matrix coverage",
             value: skillCount > 0 && employeeCount > 0
               ? `${Math.round((totalRatings / (skillCount * employeeCount)) * 100)}%`
               : "—",
             icon: Check,
-            color: "text-success-600 bg-success-50",
+            color: "text-success-600 bg-success-50 dark:text-success-400 dark:bg-success-900/30",
           },
         ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+          <div
+            key={label}
+            className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+          >
             <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", color)}>
               <Icon className="size-4" />
             </span>
             <div>
               <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{loading ? "…" : value}</p>
-              <p className="text-xs text-gray-500">{label}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
             </div>
           </div>
         ))}
@@ -627,7 +630,7 @@ export default function SkillsPage() {
       {/* Matrix */}
       <Card>
         {loading ? (
-          <div className="flex items-center justify-center gap-3 py-20 text-gray-400">
+          <div className="flex items-center justify-center gap-3 py-20 text-gray-400 dark:text-gray-500">
             <Loader2 className="size-5 animate-spin" />
             <span className="text-sm">Loading matrix…</span>
           </div>
@@ -635,13 +638,13 @@ export default function SkillsPage() {
           <>
             {matrix && (
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   Showing <strong>{employeeCount}</strong> employee{employeeCount !== 1 ? "s" : ""} ×{" "}
                   <strong>{skillCount}</strong> skill{skillCount !== 1 ? "s" : ""}
                 </span>
                 <div className="ml-auto flex flex-wrap items-center gap-2 text-xs">
                   {[1, 2, 3, 4, 5].map((n) => (
-                    <span key={n} className="flex items-center gap-1 text-gray-400">
+                    <span key={n} className="flex items-center gap-1 text-gray-400 dark:text-gray-500">
                       <StarRating value={n} readonly />
                       <span>{proficiencyLabel[n].label}</span>
                     </span>

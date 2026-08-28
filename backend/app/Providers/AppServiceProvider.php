@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\CompanyAnnouncement;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\LeaveRequest;
+use App\Policies\CompanyAnnouncementPolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\EmployeePolicy;
 use App\Policies\LeaveRequestPolicy;
@@ -29,5 +31,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Department::class, DepartmentPolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
         Gate::policy(LeaveRequest::class, LeaveRequestPolicy::class);
+        Gate::policy(CompanyAnnouncement::class, CompanyAnnouncementPolicy::class);
     }
 }

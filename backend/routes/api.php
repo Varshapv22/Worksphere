@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\Admin\SubscriptionPlanController as AdminSubscripti
 use App\Http\Controllers\Api\Admin\SupportTicketController as AdminSupportTicketController;
 use App\Http\Controllers\Api\AdvisorController;
 use App\Http\Controllers\Api\AnnouncementController;
+use App\Http\Controllers\Api\CompanyAnnouncementController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\CareerRoadmapController;
@@ -74,6 +75,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/invoices/{invoice}/submit-payment', [InvoiceController::class, 'submitPayment']);
 
         Route::get('/announcements/active', [AnnouncementController::class, 'active']);
+        Route::get('/company-announcements/active', [CompanyAnnouncementController::class, 'active']);
         Route::get('/feature-flags/active', [FeatureFlagController::class, 'active']);
 
         Route::get('/support-tickets', [SupportTicketController::class, 'index']);
@@ -82,6 +84,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/support-tickets/{ticket}/reply', [SupportTicketController::class, 'reply']);
 
         Route::apiResource('departments', DepartmentController::class);
+        Route::apiResource('company-announcements', CompanyAnnouncementController::class)->except(['show']);
         Route::apiResource('designations', DesignationController::class);
         Route::apiResource('employees', EmployeeController::class);
 

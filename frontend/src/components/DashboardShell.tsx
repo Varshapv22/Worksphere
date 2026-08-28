@@ -19,9 +19,6 @@ import {
   CreditCard,
   Eye,
   FileSearch,
-  Info,
-  TriangleAlert,
-  X,
   Gauge,
   Globe,
   HelpCircle,
@@ -51,6 +48,7 @@ import { Drawer } from "@/components/Drawer";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
+import { AnnouncementPoster } from "@/components/AnnouncementPoster";
 import { cn } from "@/lib/cn";
 
 interface NavItem {
@@ -61,11 +59,17 @@ interface NavItem {
   employeeVisible?: boolean;
 }
 
+/** Platform and company announcements share the same numeric id space per
+ * table, so the popup queue tags each with a prefixed key to dismiss them
+ * independently. */
+type QueuedAnnouncement = ActiveAnnouncement & { dismissKey: string };
+
 const tenantNavItems: NavItem[] = [
   { href: "/dashboard",         label: "Dashboard",         icon: LayoutDashboard },
   { href: "/advisor",           label: "AI Advisor",        icon: Sparkles,        employeeVisible: false },
   { href: "/employees",         label: "Employees",         icon: Users },
   { href: "/departments",       label: "Departments",       icon: Network,         employeeVisible: false },
+  { href: "/settings/announcements", label: "Announcements", icon: Megaphone,      employeeVisible: false },
   { href: "/attendance",        label: "Attendance",        icon: Clock },
   { href: "/leave",             label: "Leave",             icon: CalendarDays },
   { href: "/modules",           label: "App Marketplace",   icon: Blocks,          employeeVisible: false },
@@ -168,8 +172,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [enabledModuleSlugs, setEnabledModuleSlugs] = useState<Set<string> | null>(null);
   const [viewAsEmployee, setViewAsEmployee] = useState(false);
-  const [announcements, setAnnouncements] = useState<ActiveAnnouncement[]>([]);
-  const [dismissedAnnouncementIds, setDismissedAnnouncementIds] = useState<Set<number>>(new Set());
+  const [announcements, setAnnouncements] = useState<QueuedAnnouncement[]>([]);
+  const [dismissedAnnouncementKeys, setDismissedAnnouncementKeys] = useState<Set<string>>(new Set());
+  const [announcementPosterTotal, setAnnouncementPosterTotal] = useState(0);
 
   const isSuperAdmin = Boolean(user?.is_super_admin);
   const inAdminArea = pathname.startsWith("/admin");
@@ -194,26 +199,63 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     router.push("/login");
   }
 
+  // Dismissal is tracked per-account (keyed by user id), not just per-browser
+  // — otherwise one account dismissing a banner would hide it for every other
+  // account that later signs in on the same device.
+  const announcementStorageKey = user ? `dismissedAnnouncementKeys:${user.id}` : null;
+
   useEffect(() => {
-    if (isSuperAdmin || !user) return;
+    if (isSuperAdmin || !user || !announcementStorageKey) return;
+    let dismissed = new Set<string>();
     try {
-      const raw = localStorage.getItem("dismissedAnnouncementIds");
-      if (raw) setDismissedAnnouncementIds(new Set(JSON.parse(raw)));
+      const raw = localStorage.getItem(announcementStorageKey);
+      if (raw) dismissed = new Set(JSON.parse(raw));
     } catch {
       // ignore malformed/unavailable storage
     }
-    apiFetch<{ data: ActiveAnnouncement[] }>("/announcements/active")
-      .then((res) => setAnnouncements(res.data))
-      .catch(() => {});
-  }, [isSuperAdmin, user]);
+    setDismissedAnnouncementKeys(dismissed);
+    Promise.all([
+      apiFetch<{ data: ActiveAnnouncement[] }>("/company-announcements/active").catch(() => ({ data: [] })),
+      apiFetch<{ data: ActiveAnnouncement[] }>("/announcements/active").catch(() => ({ data: [] })),
+    ]).then(([company, platform]) => {
+      // Company-specific announcements first — most immediately relevant to
+      // the employee's own team — then platform-wide ones from WorkSphere.
+      const merged: QueuedAnnouncement[] = [
+        ...company.data.map((a) => ({ ...a, dismissKey: `c${a.id}` })),
+        ...platform.data.map((a) => ({ ...a, dismissKey: `p${a.id}` })),
+      ];
+      setAnnouncements(merged);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuperAdmin, user, announcementStorageKey]);
 
-  function dismissAnnouncement(id: number) {
-    setDismissedAnnouncementIds((prev) => {
-      const next = new Set(prev).add(id);
-      try {
-        localStorage.setItem("dismissedAnnouncementIds", JSON.stringify([...next]));
-      } catch {
-        // ignore unavailable storage
+  // Platform (super admin) announcements are only for people who manage a
+  // company — a real employee, or an admin/manager currently previewing
+  // "View as Employee", only ever sees their own company's announcements.
+  const visibleAnnouncements = announcements.filter(
+    (a) => !effectiveEmployeeView || a.dismissKey.startsWith("c")
+  );
+
+  // Re-snapshot the "1 of N" pagination total whenever the visible set
+  // changes shape (new data loaded, or the employee-view toggle flips) —
+  // but not on every dismissal, so the counter stays stable while paging
+  // through an already-open queue.
+  useEffect(() => {
+    setAnnouncementPosterTotal(
+      visibleAnnouncements.filter((a) => !dismissedAnnouncementKeys.has(a.dismissKey)).length
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [announcements, effectiveEmployeeView]);
+
+  function dismissAnnouncement(key: string) {
+    setDismissedAnnouncementKeys((prev) => {
+      const next = new Set(prev).add(key);
+      if (announcementStorageKey) {
+        try {
+          localStorage.setItem(announcementStorageKey, JSON.stringify([...next]));
+        } catch {
+          // ignore unavailable storage
+        }
       }
       return next;
     });
@@ -393,38 +435,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        {announcements
-          .filter((a) => !dismissedAnnouncementIds.has(a.id))
-          .map((a) => {
-            const styles =
-              a.level === "critical"
-                ? "border-danger-200 bg-danger-50 text-danger-800"
-                : a.level === "warning"
-                  ? "border-warning-100 bg-warning-50 text-warning-700"
-                  : "border-info-100 bg-info-50 text-info-700";
-            return (
-              <div key={a.id} className={cn("flex items-start justify-between gap-3 border-b px-4 py-2.5 text-sm sm:px-6", styles)}>
-                <span className="flex items-start gap-2">
-                  {a.level === "info" ? (
-                    <Info className="size-4 shrink-0 mt-0.5" aria-hidden="true" />
-                  ) : (
-                    <TriangleAlert className="size-4 shrink-0 mt-0.5" aria-hidden="true" />
-                  )}
-                  <span>
-                    <span className="font-semibold">{a.title}</span> — {a.body}
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => dismissAnnouncement(a.id)}
-                  className="shrink-0 rounded-sm p-0.5 hover:bg-black/5 dark:hover:bg-white/10"
-                  aria-label="Dismiss"
-                >
-                  <X className="size-4" aria-hidden="true" />
-                </button>
-              </div>
-            );
-          })}
+        <AnnouncementPoster
+          announcements={visibleAnnouncements.filter((a) => !dismissedAnnouncementKeys.has(a.dismissKey))}
+          totalCount={announcementPosterTotal}
+          onDismiss={dismissAnnouncement}
+        />
 
         <main className="flex-1 p-4 sm:p-6">
           <ViewAsEmployeeContext.Provider value={viewAsEmployee}>{children}</ViewAsEmployeeContext.Provider>

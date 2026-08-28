@@ -305,6 +305,17 @@ export interface ActiveAnnouncement {
   level: AnnouncementLevel;
 }
 
+export interface CompanyAnnouncement {
+  id: number;
+  title: string;
+  body: string;
+  level: AnnouncementLevel;
+  starts_at: string | null;
+  ends_at: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
 export type InvoiceStatus = "pending" | "submitted" | "paid" | "overdue" | "cancelled";
 
 export interface Invoice {

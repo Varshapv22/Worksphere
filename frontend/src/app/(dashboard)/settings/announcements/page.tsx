@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { useToast } from "@/lib/toast";
 import { useConfirm } from "@/lib/confirm";
-import type { AdminAnnouncement, AdminCompany, AnnouncementLevel, Paginated } from "@/lib/types";
+import type { AnnouncementLevel, CompanyAnnouncement } from "@/lib/types";
 import { Card } from "@/components/Card";
 import { Input } from "@/components/Input";
 import { Textarea } from "@/components/Textarea";
@@ -23,25 +24,23 @@ function levelVariant(level: AnnouncementLevel): "info" | "warning" | "danger" {
   return "info";
 }
 
-export default function AdminAnnouncementsPage() {
+export default function CompanyAnnouncementsPage() {
+  const { user } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
-  const [announcements, setAnnouncements] = useState<AdminAnnouncement[]>([]);
-  const [companies, setCompanies] = useState<AdminCompany[]>([]);
+  const [announcements, setAnnouncements] = useState<CompanyAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [modalItem, setModalItem] = useState<AdminAnnouncement | null | undefined>(undefined);
+  const [modalItem, setModalItem] = useState<CompanyAnnouncement | null | undefined>(undefined);
+
+  const canManage = Boolean(user?.permissions?.includes("announcements.manage"));
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [announcementsRes, companiesRes] = await Promise.all([
-        apiFetch<{ data: AdminAnnouncement[] }>("/admin/announcements"),
-        apiFetch<Paginated<AdminCompany>>("/admin/companies?per_page=200"),
-      ]);
-      setAnnouncements(announcementsRes.data);
-      setCompanies(companiesRes.data);
+      const res = await apiFetch<{ data: CompanyAnnouncement[] }>("/company-announcements");
+      setAnnouncements(res.data);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load announcements.");
     } finally {
@@ -53,11 +52,11 @@ export default function AdminAnnouncementsPage() {
     load();
   }, [load]);
 
-  async function handleDelete(item: AdminAnnouncement) {
+  async function handleDelete(item: CompanyAnnouncement) {
     const ok = await confirm({ title: `Delete "${item.title}"?`, variant: "danger" });
     if (!ok) return;
     try {
-      await apiFetch(`/admin/announcements/${item.id}`, { method: "DELETE" });
+      await apiFetch(`/company-announcements/${item.id}`, { method: "DELETE" });
       toast.success("Announcement deleted.");
       load();
     } catch (err) {
@@ -65,13 +64,9 @@ export default function AdminAnnouncementsPage() {
     }
   }
 
-  const columns: Column<AdminAnnouncement>[] = [
+  const columns: Column<CompanyAnnouncement>[] = [
     { header: "Title", accessor: (a) => <span className="font-medium text-gray-900 dark:text-gray-100">{a.title}</span> },
     { header: "Level", accessor: (a) => <Badge variant={levelVariant(a.level)}>{a.level}</Badge> },
-    {
-      header: "Audience",
-      accessor: (a) => (a.audience_type === "all" ? "All companies" : `${a.company_ids?.length ?? 0} companies`),
-    },
     {
       header: "Status",
       accessor: (a) => (
@@ -110,12 +105,14 @@ export default function AdminAnnouncementsPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Announcements"
-        description="Platform-wide notices for every company — new features, new modules, maintenance windows, and other WorkSphere updates. For messages to just your own team, company admins post from their own company's Announcements page."
+        description="Post a message to everyone at your company — it pops up on their dashboard until they dismiss it."
         actions={
-          <Button onClick={() => setModalItem(null)}>
-            <Plus className="size-4" aria-hidden="true" />
-            Add announcement
-          </Button>
+          canManage && (
+            <Button onClick={() => setModalItem(null)}>
+              <Plus className="size-4" aria-hidden="true" />
+              Add announcement
+            </Button>
+          )
         }
       />
       <Card>
@@ -131,7 +128,6 @@ export default function AdminAnnouncementsPage() {
       {modalItem !== undefined && (
         <AnnouncementModal
           item={modalItem}
-          companies={companies}
           onClose={() => setModalItem(undefined)}
           onSaved={() => {
             setModalItem(undefined);
@@ -150,12 +146,10 @@ function toDateInputValue(iso: string | null) {
 
 function AnnouncementModal({
   item,
-  companies,
   onClose,
   onSaved,
 }: {
-  item: AdminAnnouncement | null;
-  companies: AdminCompany[];
+  item: CompanyAnnouncement | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -163,17 +157,11 @@ function AnnouncementModal({
   const [title, setTitle] = useState(item?.title ?? "");
   const [body, setBody] = useState(item?.body ?? "");
   const [level, setLevel] = useState<AnnouncementLevel>(item?.level ?? "info");
-  const [audienceType, setAudienceType] = useState(item?.audience_type ?? "all");
-  const [companyIds, setCompanyIds] = useState<number[]>(item?.company_ids ?? []);
   const [startsAt, setStartsAt] = useState(toDateInputValue(item?.starts_at ?? null));
   const [endsAt, setEndsAt] = useState(toDateInputValue(item?.ends_at ?? null));
   const [isActive, setIsActive] = useState(item?.is_active ?? true);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [submitting, setSubmitting] = useState(false);
-
-  function toggleCompany(id: number) {
-    setCompanyIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -184,8 +172,6 @@ function AnnouncementModal({
       title,
       body,
       level,
-      audience_type: audienceType,
-      company_ids: audienceType === "specific" ? companyIds : [],
       starts_at: startsAt || null,
       ends_at: endsAt || null,
       is_active: isActive,
@@ -193,10 +179,10 @@ function AnnouncementModal({
 
     try {
       if (item) {
-        await apiFetch(`/admin/announcements/${item.id}`, { method: "PUT", body: JSON.stringify(payload) });
+        await apiFetch(`/company-announcements/${item.id}`, { method: "PUT", body: JSON.stringify(payload) });
         toast.success("Announcement updated.");
       } else {
-        await apiFetch("/admin/announcements", { method: "POST", body: JSON.stringify(payload) });
+        await apiFetch("/company-announcements", { method: "POST", body: JSON.stringify(payload) });
         toast.success("Announcement created.");
       }
       onSaved();
@@ -220,7 +206,7 @@ function AnnouncementModal({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           error={errors.title?.[0]}
-          placeholder="e.g. New module: Recruitment is now available"
+          placeholder="e.g. Office closed for the holiday on Friday"
         />
         <Textarea
           label="Body"
@@ -229,45 +215,20 @@ function AnnouncementModal({
           value={body}
           onChange={(e) => setBody(e.target.value)}
           error={errors.body?.[0]}
-          placeholder="Describe the platform update, new module, or website change."
+          placeholder="What do your employees need to know?"
         />
-        <div className="grid grid-cols-2 gap-4">
-          <Select label="Level" value={level} onChange={(e) => setLevel(e.target.value as AnnouncementLevel)}>
-            <option value="info">Info</option>
-            <option value="warning">Warning</option>
-            <option value="critical">Critical</option>
-          </Select>
-          <Select
-            label="Audience"
-            value={audienceType}
-            onChange={(e) => setAudienceType(e.target.value as "all" | "specific")}
-          >
-            <option value="all">All companies</option>
-            <option value="specific">Specific companies</option>
-          </Select>
-        </div>
-        {audienceType === "specific" && (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Companies</span>
-            <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-300 p-2 dark:border-gray-600">
-              {companies.map((c) => (
-                <Checkbox
-                  key={c.id}
-                  label={c.name}
-                  checked={companyIds.includes(c.id)}
-                  onChange={() => toggleCompany(c.id)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+        <Select label="Level" value={level} onChange={(e) => setLevel(e.target.value as AnnouncementLevel)}>
+          <option value="info">Info</option>
+          <option value="warning">Warning</option>
+          <option value="critical">Critical</option>
+        </Select>
         <div className="grid grid-cols-2 gap-4">
           <Input label="Starts (optional)" type="date" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
           <Input label="Ends (optional)" type="date" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
         </div>
         <Checkbox label="Active" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
         {errors.general && <p className="text-sm text-danger-600">{errors.general[0]}</p>}
-        <div className="flex justify-end gap-2 border-t border-gray-100 pt-4">
+        <div className="flex justify-end gap-2 border-t border-gray-100 pt-4 dark:border-gray-700">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
