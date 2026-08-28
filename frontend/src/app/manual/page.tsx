@@ -57,6 +57,8 @@ function chapterSearchText(chapter: ManualChapter): string {
     else if (block.kind === "table") {
       parts.push(...block.headers);
       for (const row of block.rows) parts.push(...row);
+    } else if (block.kind === "image") {
+      parts.push(block.alt, block.caption ?? "");
     }
   }
   return parts.join(" \n ").toLowerCase();
@@ -106,6 +108,20 @@ function Block({ block }: { block: ManualBlock }) {
         </div>
       );
     }
+    case "image":
+      return (
+        <figure className="flex flex-col gap-2">
+          <img
+            src={block.src}
+            alt={block.alt}
+            loading="lazy"
+            className="w-full rounded-lg border border-gray-200 shadow-sm dark:border-gray-700"
+          />
+          {block.caption && (
+            <figcaption className="text-center text-xs text-gray-500 dark:text-gray-400">{block.caption}</figcaption>
+          )}
+        </figure>
+      );
     case "table":
       return (
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">

@@ -45,7 +45,8 @@ export type ManualBlock =
   | { kind: "steps"; items: string[] }
   | { kind: "list"; items: string[] }
   | { kind: "callout"; tone: "tip" | "info" | "warning"; text: string }
-  | { kind: "table"; headers: string[]; rows: string[][] };
+  | { kind: "table"; headers: string[]; rows: string[][] }
+  | { kind: "image"; src: string; alt: string; caption?: string };
 
 export interface ManualChapter {
   id: string;
@@ -92,6 +93,12 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             ],
           },
           { kind: "h3", text: "Signing in" },
+          {
+            kind: "image",
+            src: "/manual/login-screen.png",
+            alt: "The WorkSphere sign-in screen, with email and password fields on the left and a product highlight panel on the right.",
+            caption: "The sign-in screen — every company shares this page, with a link to register a new company below the form.",
+          },
           {
             kind: "steps",
             items: [
@@ -150,6 +157,12 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             text: "The Dashboard (/dashboard) is deliberately simple — a quick daily snapshot rather than a busy control panel. It shows three stat cards:",
           },
           {
+            kind: "image",
+            src: "/manual/dashboard-overview.png",
+            alt: "The WorkSphere dashboard showing Headcount, Present today, and Pending leave requests stat cards, with the sidebar navigation on the left.",
+            caption: "The dashboard for a small company — the sidebar only lists the modules this company has enabled.",
+          },
+          {
             kind: "list",
             items: [
               "Headcount — total number of employees at your company.",
@@ -172,6 +185,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
         summary: "Browse the team, and the 13-tab profile page behind every employee.",
         blocks: [
           { kind: "h3", text: "The directory (/employees)" },
+          {
+            kind: "image",
+            src: "/manual/employee-directory.png",
+            alt: "The employee directory list view with a search bar, department filter, and employee rows.",
+          },
           {
             kind: "list",
             items: [
@@ -228,6 +246,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             text: "As a plain employee, the Attendance page (/attendance) shows your own My Attendance view: today's status — not clocked in, clocked in at a given time, or completed — with a big Clock In / Clock Out button (each asks for confirmation before it submits).",
           },
           {
+            kind: "image",
+            src: "/manual/attendance-personal.png",
+            alt: "The personal Attendance view, reached via View as Employee, showing the clock in/out button.",
+          },
+          {
             kind: "p",
             text: "Below that is your personal history: date, clock-in time (flagged in red if it's after 10am), clock-out time, and a status badge (Completed / In progress).",
           },
@@ -259,6 +282,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
           {
             kind: "p",
             text: "A month grid you can page through with Prev / Next / Today. Company holidays show as red badges; your own leave requests show as colored badges on the days they cover (green = approved, amber = pending, red = rejected or holiday). Click any day to open the Request Leave form pre-filled with that date.",
+          },
+          {
+            kind: "image",
+            src: "/manual/leave-personal.png",
+            alt: "The personal Leave calendar, reached via View as Employee, with balance tiles and a month grid.",
           },
           { kind: "h3", text: "Requesting leave" },
           {
@@ -295,6 +323,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             text: "The Skills Matrix (/skills) is a grid: rows are employees, columns are skills grouped by category. Click a star on any cell to set that person's proficiency (1–5 stars) — it saves instantly and reverts automatically if the save fails.",
           },
           {
+            kind: "image",
+            src: "/manual/skills-matrix.png",
+            alt: "The Skills Matrix page with stat tiles and a grid of employees against star-rated skills.",
+          },
+          {
             kind: "list",
             items: [
               "Stat tiles at the top show skills tracked, employees, ratings logged, and overall matrix coverage.",
@@ -322,6 +355,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             kind: "p",
             text: "Browse by category in the sidebar (Policies, SOPs, Technical Guides, FAQs, Onboarding, or any custom category), or search by title/content. Each article card shows its category, view count, an excerpt, the author, and when it was last updated.",
           },
+          {
+            kind: "image",
+            src: "/manual/knowledge-base.png",
+            alt: "The Knowledge Base page with a category sidebar and a grid of article cards.",
+          },
           { kind: "h3", text: "Writing an article" },
           {
             kind: "steps",
@@ -347,6 +385,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
         access: "Requires the Recognition module to be enabled",
         summary: "Award peer or manager recognition badges and browse the company feed.",
         blocks: [
+          {
+            kind: "image",
+            src: "/manual/recognition.png",
+            alt: "The Recognition page with stat tiles, a grid of available badges, and an empty recognition feed.",
+          },
           {
             kind: "steps",
             items: [
@@ -375,6 +418,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             text: "Ask questions in plain language — the assistant answers using real, live data from your company (employees, attendance, leave), not canned responses. Try one of the suggested chips on the empty screen, e.g. \"Who is on leave today?\", \"Who is late today?\", \"Show pending leave requests\", or \"How many employees do we have?\"",
           },
           {
+            kind: "image",
+            src: "/manual/ai-assistant.png",
+            alt: "The AI Assistant chat page with suggested question chips and a message input at the bottom.",
+          },
+          {
             kind: "list",
             items: [
               "Type and press Enter to send (Shift+Enter for a new line), or use the microphone button for voice input if your browser supports it.",
@@ -395,6 +443,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
           {
             kind: "p",
             text: "Each career track is a card — title, target role, description, and an ordered list of steps you can expand. Every step can carry its own description, required skills, and linked resources.",
+          },
+          {
+            kind: "image",
+            src: "/manual/career-roadmap.png",
+            alt: "The Career Roadmap page with career track cards.",
           },
           {
             kind: "h3", text: "Creating a track",
@@ -422,6 +475,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
         summary: "Capture meeting notes, decisions, and trackable follow-up tasks.",
         blocks: [
           {
+            kind: "image",
+            src: "/manual/meetings.png",
+            alt: "The Meetings page with meeting cards and action-item progress bars.",
+          },
+          {
             kind: "steps",
             items: [
               "Click New Meeting and fill in a Title, Date & Time, Description, and free-form Notes.",
@@ -446,6 +504,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
           {
             kind: "p",
             text: "Assets move through five stages — Purchased → Assigned → Maintenance → Returned → Disposed — shown as a clickable lifecycle strip at the top; click a stage to filter the table by it. Warranty dates expiring within 30 days are flagged with a warning icon.",
+          },
+          {
+            kind: "image",
+            src: "/manual/assets.png",
+            alt: "The Asset Lifecycle page with the five-stage filter strip and an asset table.",
           },
           {
             kind: "steps",
@@ -474,6 +537,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             text: "Three clickable summary tiles — Valid, Expiring Soon, Expired — both show counts and act as filters for the table below. \"Days Left\" is color-coded: red if overdue, amber if due within 30 days, green otherwise.",
           },
           {
+            kind: "image",
+            src: "/manual/compliance.png",
+            alt: "The Compliance Tracker page with Valid, Expiring Soon, and Expired summary tiles above a document table.",
+          },
+          {
             kind: "steps",
             items: [
               "Click Add Item.",
@@ -493,6 +561,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
           {
             kind: "p",
             text: "The Support page lists your tickets — subject, priority, status, and last-updated time. Click New Ticket to open one: a subject, a priority (low/normal/high/urgent), and a description of the issue.",
+          },
+          {
+            kind: "image",
+            src: "/manual/support-tickets.png",
+            alt: "The Support page listing tickets with subject, priority, status, and last-updated columns.",
           },
           {
             kind: "p",
@@ -525,6 +598,12 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             text: "The App Marketplace (/modules) is what unlocks nearly everything else in this guide — Attendance, Skills Matrix, Recruitment, Analytics, Payroll, and more are all off by default until a Company Admin enables them here.",
           },
           {
+            kind: "image",
+            src: "/manual/app-marketplace.png",
+            alt: "The App Marketplace page with three columns: Disabled modules, Active modules, and Coming Soon modules.",
+            caption: "Drag a module card from Disabled into Active (or use the checkmark toggle) to switch it on for the whole company.",
+          },
+          {
             kind: "p",
             text: "Modules are shown in three lanes: Disabled, Active, and Coming Soon. Drag a card between Disabled and Active to switch it on or off, or use the small check/✕ toggle on the card. Coming Soon modules aren't released yet and can't be enabled.",
           },
@@ -554,6 +633,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
               "Choose \"View as Employee.\"",
               "A brand-colored banner appears under the header confirming \"Viewing as Employee — the sidebar only shows what a regular employee sees,\" with an Exit link.",
             ],
+          },
+          {
+            kind: "image",
+            src: "/manual/view-as-employee.png",
+            alt: "The dashboard with the green 'Viewing as Employee' banner under the header and a trimmed-down sidebar.",
           },
           { kind: "h3", text: "What changes while it's on" },
           {
@@ -590,6 +674,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             kind: "p",
             text: "A straightforward table of departments (name, description) with Add, Edit, and Delete (delete asks for confirmation first). Departments show up everywhere else as a filter and a field — the employee directory, profile forms, compliance items, and more.",
           },
+          {
+            kind: "image",
+            src: "/manual/departments.png",
+            alt: "The Departments page with a table of department names and descriptions.",
+          },
         ],
       },
       {
@@ -607,6 +696,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
               "Zoom in/out or reset, with a live percentage readout.",
               "Click any card to jump to that person's full profile.",
             ],
+          },
+          {
+            kind: "image",
+            src: "/manual/org-chart.png",
+            alt: "The Org Chart page with employee cards connected in a reporting-line tree, and a status dot on each card.",
           },
           {
             kind: "p",
@@ -632,6 +726,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             text: "Anyone with attendance view/manage permissions (managers and company admins) lands on the whole team's attendance — every employee's clock-in/out history, filterable by employee — instead of a personal clock-in view. To clock yourself in or out, turn on \"View as Employee\" first; that switches this page to your own personal view.",
           },
           {
+            kind: "image",
+            src: "/manual/team-attendance.png",
+            alt: "The team Attendance view for a Manager or Company Admin, listing every employee's clock-in and clock-out history.",
+          },
+          {
             kind: "callout",
             tone: "info",
             text: "The attendance history table (both the team view and the personal \"View as Employee\" view) is paginated at 20 records per page.",
@@ -647,6 +746,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
               "Requests — everyone's leave requests, filterable by status and by employee, with Approve / Reject buttons on pending requests that aren't your own.",
               "Company Holidays — visible only to Company Admins (a stricter permission than approval). Add a holiday's name and date, or remove one; holidays then appear on everyone's leave calendar automatically.",
             ],
+          },
+          {
+            kind: "image",
+            src: "/manual/team-leave-requests.png",
+            alt: "The team Leave Requests view with a Requests tab and a Company Holidays tab, and a table of every employee's requests.",
           },
           {
             kind: "p",
@@ -667,6 +771,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
         access: "Requires the Recruitment module to be enabled",
         summary: "Upload a candidate resume and get structured data back instantly via AI.",
         blocks: [
+          {
+            kind: "image",
+            src: "/manual/resume-parser.png",
+            alt: "The Resume Parser page with a Parse Resume button and cards explaining what gets extracted from a resume.",
+          },
           {
             kind: "steps",
             items: [
@@ -689,6 +798,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
         access: "Requires the Analytics module to be enabled",
         summary: "A read-only workforce reporting dashboard.",
         blocks: [
+          {
+            kind: "image",
+            src: "/manual/analytics.png",
+            alt: "The Company Analytics page with a KPI row, hiring/attrition/payroll trend charts, and a department breakdown table.",
+          },
           {
             kind: "list",
             items: [
@@ -717,6 +831,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             text: "Unlike the AI Assistant (a chatbot you ask questions), the Advisor surfaces things worth your attention on its own — a grid of insight cards generated from company data. Click Refresh to regenerate them.",
           },
           {
+            kind: "image",
+            src: "/manual/ai-workforce-advisor.png",
+            alt: "The AI Workforce Advisor page with insight cards for a promotion opportunity and a payroll increase.",
+          },
+          {
             kind: "p",
             text: "When nothing needs attention, it simply says so: \"No signals right now — attendance, performance, and payroll all look healthy.\"",
           },
@@ -733,6 +852,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
           {
             kind: "p",
             text: "Switch between Single Employee and Bulk (Department / All) modes.",
+          },
+          {
+            kind: "image",
+            src: "/manual/payroll-simulator.png",
+            alt: "The Payroll Simulator page in Single Employee mode, showing current vs. new net pay.",
           },
           {
             kind: "list",
@@ -757,6 +881,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
         summary: "Set up per-country payroll rules if you employ people in more than one country.",
         blocks: [
           {
+            kind: "image",
+            src: "/manual/payroll-config.png",
+            alt: "The Multi-Country Payroll Config page with an Add Country button and its empty state before any country is configured.",
+          },
+          {
             kind: "steps",
             items: [
               "Click Add Country. Pick a Quick Preset (India, US, UK, UAE, Singapore, Australia, Canada, Germany) to auto-fill sensible defaults, or fill fields manually.",
@@ -775,6 +904,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
         summary: "Issue API keys and register webhooks to integrate WorkSphere with other systems.",
         blocks: [
           { kind: "h3", text: "API Keys" },
+          {
+            kind: "image",
+            src: "/manual/developer-api.png",
+            alt: "The Developer API page's API Keys tab with a New API Key button and the curl usage snippet.",
+          },
           {
             kind: "steps",
             items: [
@@ -806,6 +940,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
         summary: "Customize how WorkSphere looks and feels for your company.",
         blocks: [
           {
+            kind: "image",
+            src: "/manual/branding.png",
+            alt: "The Branding page with App Identity and Brand Colours forms on the left and a live login-screen preview on the right.",
+          },
+          {
             kind: "list",
             items: [
               "App Identity — app name, logo URL, favicon URL.",
@@ -832,6 +971,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             text: "The Billing page shows the UPI ID and payee name to pay your invoices to, plus a table of every invoice — period, amount, status, and any UPI reference you've already submitted.",
           },
           {
+            kind: "image",
+            src: "/manual/company-billing.png",
+            alt: "The Company Billing page with the UPI ID and payee name to pay, and an invoice table.",
+          },
+          {
             kind: "steps",
             items: [
               "Find a pending invoice and click \"Submit payment.\"",
@@ -856,6 +1000,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
         audience: "Super Admin",
         summary: "Platform-wide health at a glance: companies, revenue, and risk signals.",
         blocks: [
+          {
+            kind: "image",
+            src: "/manual/platform-dashboard.png",
+            alt: "The Platform Dashboard with alert banners, stat cards, and a company status panel across every tenant.",
+          },
           {
             kind: "list",
             items: [
@@ -884,6 +1033,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
           {
             kind: "p",
             text: "Search by name or email. Each row shows plan, usage (employee count vs. cap, highlighted if ≥80%), status, and join date, with actions that depend on status:",
+          },
+          {
+            kind: "image",
+            src: "/manual/platform-companies.png",
+            alt: "The Companies page listing every tenant with plan, usage, status, join date, and Suspend/Modules actions.",
           },
           {
             kind: "table",
@@ -932,6 +1086,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
               "Modules not yet released platform-wide show a clock icon.",
             ],
           },
+          {
+            kind: "image",
+            src: "/manual/company-modules.png",
+            alt: "The Module Access per Company page with Inactive and Active Kanban lanes for one company's granted modules.",
+          },
         ],
       },
       {
@@ -953,6 +1112,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             kind: "p",
             text: "The table shows each module's category, how many companies have it enabled, and its availability/listing status. Delete removes it from the catalog entirely (confirmation required).",
           },
+          {
+            kind: "image",
+            src: "/manual/module-catalog.png",
+            alt: "The Module Catalog table listing every module with its category, companies-enabled count, and status.",
+          },
         ],
       },
       {
@@ -971,6 +1135,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             ],
           },
           {
+            kind: "image",
+            src: "/manual/subscription-plans.png",
+            alt: "The Subscription Plans table listing each plan's price, employee cap, features, company count, and status.",
+          },
+          {
             kind: "p",
             text: "The list also shows how many companies are currently on each plan. Delete removes a plan (confirmation required) — do this carefully if companies are still on it.",
           },
@@ -986,6 +1155,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
           {
             kind: "p",
             text: "The UPI ID and payee name set here are exactly what shows up on every company's own Billing page as \"where to pay.\"",
+          },
+          {
+            kind: "image",
+            src: "/manual/platform-billing.png",
+            alt: "The Platform Billing page with UPI settings and a status filter above the full cross-tenant invoice table.",
           },
           { kind: "h3", text: "Invoices" },
           {
@@ -1020,6 +1194,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             ],
           },
           {
+            kind: "image",
+            src: "/manual/announcements.png",
+            alt: "The Announcements page with an Add Announcement button above a table of title, level, audience, and status.",
+          },
+          {
             kind: "p",
             text: "Live announcements appear as a dismissible colored banner across the top of the target companies' workspaces.",
           },
@@ -1032,6 +1211,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
         audience: "Super Admin",
         summary: "Protect your own super-admin account with 2FA, and lock down platform access by IP.",
         blocks: [
+          {
+            kind: "image",
+            src: "/manual/platform-security.png",
+            alt: "The Security page with a Two-factor authentication card and an IP allowlist card.",
+          },
           { kind: "h3", text: "Two-factor authentication" },
           {
             kind: "steps",
@@ -1070,6 +1254,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
             text: "Search by action or subject, and filter to a single company. Each entry shows the time, which admin performed it, a color-coded action badge (green = approve/create/grant, red = reject/delete/revoke, blue = update), the affected record, an expandable before/after diff when available, and the IP address it came from.",
           },
           {
+            kind: "image",
+            src: "/manual/activity-log.png",
+            alt: "The Activity Log table with time, admin, action badge, subject, details, and IP columns.",
+          },
+          {
             kind: "p",
             text: "This log is populated automatically by actions elsewhere — company approvals/rejections, impersonation, invoice changes, module grants, feature-flag changes, data exports and purges, and more. There's nothing to edit here.",
           },
@@ -1085,6 +1274,11 @@ export const MANUAL_GROUPS: ManualGroup[] = [
           {
             kind: "p",
             text: "Filter by status (All / Open / In progress / Resolved / Closed). Each row shows subject, company, priority, status, and last update.",
+          },
+          {
+            kind: "image",
+            src: "/manual/support-inbox.png",
+            alt: "The Support Inbox with a status filter above a table of tickets from every company.",
           },
           {
             kind: "p",
