@@ -7,6 +7,7 @@ use App\Http\Resources\Admin\AdminCompanyResource;
 use App\Models\AdminActivityLog;
 use App\Models\Company;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class CompanyController extends Controller
@@ -82,5 +83,32 @@ class CompanyController extends Controller
         AdminActivityLog::record('company.reject', $company, ['before' => ['status' => $before], 'after' => ['status' => 'rejected']], $company->name);
 
         return new AdminCompanyResource($company->fresh()->loadCount('employees')->load('subscriptionPlan'));
+    }
+
+    /**
+     * Set a new password for this company's admin, for support/recovery
+     * situations where the admin is locked out. Logged for audit.
+     */
+    public function resetAdminPassword(Request $request, Company $company)
+    {
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        setPermissionsTeamId($company->id);
+        $admin = $company->users()->get()->first(fn ($user) => $user->hasRole('company-admin'));
+
+        abort_unless($admin, 404, 'This company has no admin user.');
+
+        $admin->update(['password' => Hash::make($validated['password'])]);
+
+        AdminActivityLog::record(
+            'company.reset_admin_password',
+            $company,
+            ['as_user_id' => $admin->id, 'as_user_email' => $admin->email],
+            $company->name
+        );
+
+        return response()->json(['message' => "Password updated for {$admin->email}."]);
     }
 }

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ResetEmployeePasswordRequest;
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 use App\Http\Resources\EmployeeResource;
 use App\Models\Employee;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class EmployeeController extends Controller
 {
@@ -61,5 +63,19 @@ class EmployeeController extends Controller
         $employee->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Set a new login password for this employee. Only employees with an
+     * account (a linked user) can have one — plain employee records with no
+     * login access have nothing to reset.
+     */
+    public function resetPassword(ResetEmployeePasswordRequest $request, Employee $employee)
+    {
+        abort_unless($employee->user_id, 422, 'This employee does not have login access.');
+
+        $employee->user->update(['password' => Hash::make($request->validated()['password'])]);
+
+        return response()->json(['message' => "Password updated for {$employee->first_name} {$employee->last_name}."]);
     }
 }

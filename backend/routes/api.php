@@ -87,6 +87,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('company-announcements', CompanyAnnouncementController::class)->except(['show']);
         Route::apiResource('designations', DesignationController::class);
         Route::apiResource('employees', EmployeeController::class);
+        Route::post('/employees/{employee}/password', [EmployeeController::class, 'resetPassword']);
 
         // Employee 360 Profile
         Route::get('/employees/{employee}/360', [Employee360Controller::class, 'show']);
@@ -273,6 +274,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/companies/{company}/approve', [AdminCompanyController::class, 'approve']);
             Route::post('/companies/{company}/reject', [AdminCompanyController::class, 'reject']);
             Route::post('/companies/{company}/impersonate', [AdminImpersonationController::class, 'start']);
+            Route::post('/companies/{company}/reset-admin-password', [AdminCompanyController::class, 'resetAdminPassword']);
             Route::get('/companies/{company}/modules', [AdminCompanyModuleController::class, 'index']);
             Route::post('/companies/{company}/modules/reorder', [AdminCompanyModuleController::class, 'reorder']);
             Route::patch('/companies/{company}/modules/{module}', [AdminCompanyModuleController::class, 'update']);
